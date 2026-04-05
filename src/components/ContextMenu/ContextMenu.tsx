@@ -12,6 +12,9 @@ import { useNavigate } from "react-router-dom";
 import { useActions } from "../../hooks/actions";
 import { FolderInterface } from "../../types/folders";
 import classNames from "classnames";
+import { useTranslation } from "react-i18next";
+import { useAppDispatch } from "../../hooks/store";
+import { setMainSelect } from "../../reducers/selected";
 
 export interface ContextMenuProps {
   closeContext: () => void;
@@ -48,6 +51,8 @@ const ContextMenu: React.FC<ContextMenuProps> = memo((props) => {
   const { wrapperRef } = useClickOutOfBounds(closeContext);
   const { isTrash, isMedia } = useUtils();
   const navigate = useNavigate();
+  const { t } = useTranslation();
+  const dispatch = useAppDispatch();
   const {
     renameItem,
     trashItem,
@@ -95,9 +100,19 @@ const ContextMenu: React.FC<ContextMenuProps> = memo((props) => {
       | "share"
       | "download"
       | "multi-select"
+      | "details"
   ) => {
     closeContext();
     switch (action) {
+      case "details":
+        if (file) {
+          dispatch(setMainSelect({ file, id: file._id, type: "file", folder: null }));
+        } else if (folder) {
+          dispatch(setMainSelect({ file: null, id: folder._id, type: "folder", folder }));
+        }
+        // Hiermit öffnen wir die RightSection (Details Leiste)!
+        window.dispatchEvent(new Event("open-details"));
+        break;
       case "rename":
         await renameItem(file, folder);
         break;
@@ -148,6 +163,10 @@ const ContextMenu: React.FC<ContextMenuProps> = memo((props) => {
     closeContext();
   };
 
+  const menuItemClass = "flex flex-row items-center px-4 py-2.5 hover:bg-[#f1f3f4] cursor-pointer transition-colors text-[#3c4043]";
+  const iconClass = "w-5 h-5 mr-4 text-[#5f6368]";
+  const textClass = "m-0 text-[14px]";
+
   return (
     <div
       id="context-wrapper"
@@ -158,10 +177,10 @@ const ContextMenu: React.FC<ContextMenuProps> = memo((props) => {
         onClick={stopPropagation}
         ref={wrapperRef}
         className={classNames(
-          "fixed min-w-[215px] bg-white shadow-lg rounded-md z-50 animate-movement",
+          "fixed min-w-[260px] bg-white shadow-[0_4px_12px_rgba(0,0,0,0.15)] rounded-xl py-2 z-50 animate-movement",
           {
-            "opacity-0": !animate,
-            "opacity-100": animate,
+            "opacity-0 scale-95": !animate,
+            "opacity-100 scale-100": animate,
           }
         )}
         style={
@@ -173,77 +192,70 @@ const ContextMenu: React.FC<ContextMenuProps> = memo((props) => {
             : {}
         }
       >
-        <div>
+        <div className="flex flex-col">
           {!parentBarMode && (
-            <div
-              onClick={() => onAction("multi-select")}
-              className="text-gray-primary flex flex-row p-4 hover:bg-white-hover hover:text-primary rounded-t-md"
-            >
-              <MultiSelectIcon className="w-5 h-5" />
-              <p className="ml-2.5 text-sm">Multi-select</p>
+            <div onClick={() => onAction("multi-select")} className={menuItemClass}>
+              <MultiSelectIcon className={iconClass} />
+              <p className={textClass}>{t("context_menu.multi_select")}</p>
             </div>
           )}
           {!isTrash && !isMedia && (
-            <div
-              onClick={() => onAction("rename")}
-              className="text-gray-primary flex flex-row p-4 hover:bg-white-hover hover:text-primary"
-            >
-              <RenameIcon className="w-5 h-5" />
-              <p className="ml-2.5 text-sm">Rename</p>
+            <div onClick={() => onAction("rename")} className={menuItemClass}>
+              <RenameIcon className={iconClass} />
+              <p className={textClass}>{t("context_menu.rename")}</p>
             </div>
           )}
           {!folderMode && !isTrash && (
-            <div
-              onClick={() => onAction("share")}
-              className="text-gray-primary flex flex-row p-4 hover:bg-white-hover hover:text-primary"
-            >
-              <ShareIcon className="w-5 h-5" />
-              <p className="ml-2.5 text-sm">Share</p>
+            <div onClick={() => onAction("share")} className={menuItemClass}>
+              <ShareIcon className={iconClass} />
+              <p className={textClass}>{t("context_menu.share")}</p>
             </div>
           )}
+          
           {!isTrash && (
-            <div
-              onClick={() => onAction("download")}
-              className="text-gray-primary flex flex-row p-4 hover:bg-white-hover hover:text-primary"
-            >
-              <DownloadIcon className="w-5 h-5" />
-              <p className="ml-2.5 text-sm">Download</p>
+            <div className="w-full h-px bg-[#dadce0] my-1"></div>
+          )}
+
+          {!isTrash && (
+            <div onClick={() => onAction("download")} className={menuItemClass}>
+              <DownloadIcon className={iconClass} />
+              <p className={textClass}>{t("context_menu.download")}</p>
             </div>
           )}
           {!isTrash && !isMedia && (
-            <div
-              onClick={() => onAction("move")}
-              className="text-gray-primary flex flex-row p-4 hover:bg-white-hover hover:text-primary"
-            >
-              <MoveIcon className="w-5 h-5" />
-              <p className="ml-2.5 text-sm">Move</p>
+            <div onClick={() => onAction("move")} className={menuItemClass}>
+              <MoveIcon className={iconClass} />
+              <p className={textClass}>{t("context_menu.move")}</p>
             </div>
           )}
+          
+          <div onClick={() => onAction("details")} className={menuItemClass}>
+            <svg viewBox="0 0 24 24" fill="currentColor" className={iconClass}>
+               <path d="M11 7h2v2h-2zm0 4h2v6h-2zm1-9C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 18c-4.41 0-8-3.59-8-8s3.59-8 8-8 8 3.59 8 8-3.59 8-8 8z"/>
+            </svg>
+            <p className={textClass}>{t("context_menu.details")}</p>
+          </div>
+          
           {!isTrash && (
-            <div
-              onClick={() => onAction("trash")}
-              className="text-gray-primary flex flex-row p-4 hover:bg-white-hover hover:text-primary rounded-b-md"
-            >
-              <TrashIcon className="w-5 h-5" />
-              <p className="ml-2.5 text-sm">Trash</p>
+            <div className="w-full h-px bg-[#dadce0] my-1"></div>
+          )}
+
+          {!isTrash && (
+            <div onClick={() => onAction("trash")} className={menuItemClass}>
+              <TrashIcon className={iconClass} />
+              <p className={textClass}>{t("context_menu.trash")}</p>
             </div>
           )}
           {isTrash && (
-            <div
-              onClick={() => onAction("restore")}
-              className="text-gray-primary flex flex-row p-4 hover:bg-white-hover hover:text-primary"
-            >
-              <RestoreIcon className="w-5 h-5" />
-              <p className="ml-2.5 text-sm">Restore</p>
+            <div onClick={() => onAction("restore")} className={menuItemClass}>
+              <RestoreIcon className={iconClass} />
+              <p className={textClass}>{t("context_menu.restore")}</p>
             </div>
           )}
           {isTrash && (
-            <div
-              onClick={() => onAction("delete")}
-              className="text-gray-primary flex flex-row p-4 hover:bg-white-hover hover:text-red-500 rounded-b-md"
-            >
-              <TrashIcon className="w-5 h-5" />
-              <p className="ml-2.5 text-sm">Delete</p>
+            <div onClick={() => onAction("delete")} className="flex flex-row items-center px-4 py-2.5 hover:bg-[#fce8e6] cursor-pointer transition-colors text-[#d93025]">
+              <TrashIcon className="w-5 h-5 mr-4 text-[#d93025]" />
+              <p className={textClass}>{t("context_menu.delete")}</p>
             </div>
           )}
         </div>

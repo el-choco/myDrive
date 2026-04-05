@@ -6,42 +6,124 @@
 @import "./components/Spinner";
 @import "./components/Swal";
 
-.animate {
-  transition: 0.2s ease all;
+/* =======================================================
+   GOOGLE DRIVE GLOBAL THEME BASE
+   ======================================================= */
+@layer base {
+  html, body, #root {
+    background-color: #f8f9fa !important; /* Das softe Google Drive Hintergrund-Grau */
+    font-family: 'Roboto', 'Segoe UI', Arial, sans-serif !important;
+    color: #3c4043;
+  }
 }
 
-.animate-easy {
-  transition: 0.3s ease all;
-}
+/* =======================================================
+   EXISTIERENDE ANIMATIONEN & TOASTS
+   ======================================================= */
+.animate { transition: 0.2s ease all; }
+.animate-easy { transition: 0.3s ease all; }
+.animate-movement { transition: 0.4s ease all; }
+.animate-medium { transition: 0.6s ease all; }
+.animate-very-long { transition: 6s ease all; }
 
-.animate-movement {
-  transition: 0.4s ease all;
-}
-
-.animate-medium {
-  transition: 0.6s ease all;
-}
-
-.animate-very-long {
-  transition: 6s ease all;
-}
-
-.Toastify__progress-bar--success {
-  background-color: #3c85ee !important;
-}
-
-.--toastify-color-transparent .Toastify__toast-icon {
-  background-color: #3c85ee !important;
-}
-
-.Toastify__toast--success .Toastify__icon svg path {
-  fill: #3c85ee !important;
-}
+.Toastify__progress-bar--success { background-color: #1a73e8 !important; } /* Geändert auf Google Blau */
+.--toastify-color-transparent .Toastify__toast-icon { background-color: #1a73e8 !important; }
+.Toastify__toast--success .Toastify__icon svg path { fill: #1a73e8 !important; }
 
 :root {
-  --toastify-icon-color-success: #3c85ee !important;
+  --toastify-icon-color-success: #1a73e8 !important;
 }
 
 .disable-force-touch {
   -webkit-touch-callout: none;
+}
+
+/* =======================================================
+   SWEETALERT2 GOOGLE DRIVE THEME (Massive-Size-Mode)
+   ======================================================= */
+.drive-popup {
+  border-radius: 12px !important;
+  padding: 48px !important; /* Doppelte Polsterung */
+  font-family: 'Roboto', 'Segoe UI', Arial, sans-serif !important;
+  width: 620px !important; /* Doppelte Breite */
+  box-sizing: border-box !important;
+}
+.drive-title {
+  text-align: left !important;
+  font-size: 26px !important; /* Doppelte Schriftgröße */
+  font-weight: 500 !important;
+  color: #202124 !important;
+  padding: 0 !important;
+  margin-bottom: 16px !important; /* Mehr Abstand */
+}
+.drive-html {
+  text-align: left !important;
+  font-size: 20px !important; /* Doppelte Schriftgröße */
+  color: #5f6368 !important;
+  padding: 0 !important;
+  margin-top: 16px !important; /* Doppelte Marge */
+}
+.drive-input {
+  width: 100% !important;
+  box-sizing: border-box !important;
+  border: 1px solid #dadce0 !important;
+  border-radius: 8px !important; /* Größerer Radius */
+  box-shadow: none !important;
+  margin: 40px 0 0 0 !important; /* Doppelte Marge nach oben */
+  padding: 16px 24px !important; /* Doppelte Polsterung */
+  font-size: 20px !important; /* Doppelte Schriftgröße */
+  color: #202124 !important;
+  transition: border-color 0.2s;
+}
+.drive-input:focus {
+  border: 2px solid #1a73e8 !important;
+  outline: none !important;
+  padding: 15px 23px !important; /* Angepasst an den Rahmen-Wechsel */
+}
+.drive-actions {
+  display: flex !important;
+  justify-content: space-around !important;
+  gap: 16px !important; /* Doppelter Abstand */
+  width: 100% !important;
+  padding: 0 !important;
+  margin-top: 48px !important; /* Doppelte Marge nach oben */
+}
+.drive-confirm {
+  background-color: #1a73e8 !important;
+  color: white !important;
+  border-radius: 8px !important; /* Größerer Radius */
+  font-weight: 500 !important;
+  font-size: 20px !important; /* Doppelte Schriftgröße */
+  padding: 16px 48px !important; /* Doppelte Polsterung */
+  box-shadow: none !important;
+  border: none !important;
+  cursor: pointer;
+  margin: 0 !important;
+  transition: background-color 0.2s;
+}
+.drive-confirm:hover {
+  background-color: #1557b0 !important;
+}
+.drive-confirm-danger {
+  background-color: #d93025 !important;
+}
+.drive-confirm-danger:hover {
+  background-color: #b3261e !important;
+}
+.drive-cancel {
+  background-color: #dcebfe !important;
+  color: #1a73e8 !important;
+  font-weight: 500 !important;
+  font-size: 20px !important; /* Doppelte Schriftgröße */
+  padding: 16px 32px !important; /* Doppelte Polsterung */
+  box-shadow: none !important;
+  border: none !important;
+  cursor: pointer;
+  margin: 0 !important;
+  transition: background-color 0.2s;
+  border-radius: 8px !important;
+}
+.drive-cancel:hover {
+  background-color: #f1f3f4 !important;
+  border-radius: 8px !important; /* Größerer Radius */
 }

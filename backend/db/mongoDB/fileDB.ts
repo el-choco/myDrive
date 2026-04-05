@@ -343,7 +343,7 @@ class DbUtil {
     return file;
   };
 
-  moveMultipleFiles = async (
+moveMultipleFiles = async (
     userID: string | mongoose.Types.ObjectId,
     currentParent: string,
     newParent: string,
@@ -356,8 +356,7 @@ class DbUtil {
           "metadata.parent": newParent,
           "metadata.parentList": newParentList,
         },
-      },
-      { new: true }
+      }
     );
   };
 

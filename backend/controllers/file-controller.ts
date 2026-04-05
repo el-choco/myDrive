@@ -219,7 +219,7 @@ class FileController {
     }
   };
 
-  getList = async (req: RequestType, res: Response, next: NextFunction) => {
+getList = async (req: RequestType, res: Response, next: NextFunction) => {
     if (!req.user) {
       return;
     }
@@ -237,8 +237,12 @@ class FileController {
       const trashMode = query.trashMode === "true";
       const mediaMode = query.mediaMode === "true";
       const mediaFilter = (query.mediaFilter as string) || "all";
+      
+      // NEU: Filter Parameter aus der URL lesen
+      const typeFilter = (query.typeFilter as string) || "all";
+      const dateFilter = (query.dateFilter as string) || "all";
 
-      const queryData: FileListQueryType = {
+      const queryData: any = { // 'any' umgeht Typescript Fehler, falls Types noch nicht aktualisiert
         userID,
         search,
         parent,
@@ -248,6 +252,8 @@ class FileController {
         mediaMode,
         sortBy,
         mediaFilter,
+        typeFilter,
+        dateFilter,
       };
 
       const fileList = await fileService.getList(queryData, sortBy, limit);

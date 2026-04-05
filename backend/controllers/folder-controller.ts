@@ -144,11 +144,18 @@ class FolderController {
       const sortBy = (query.sortBy as string) || "date_desc";
       const trashMode = query.trashMode === "true";
 
-      const queryData: FolderListQueryType = {
+      // NEU: Filter Parameter aus der URL lesen
+      const typeFilter = (query.typeFilter as string) || "all";
+      const dateFilter = (query.dateFilter as string) || "all";
+
+      // 'any' erlaubt uns, die neuen Properties ohne strikte Typisierung durchzureichen
+      const queryData: any = {
         userID: user._id.toString(),
         search,
         parent,
         trashMode,
+        typeFilter,
+        dateFilter,
       };
 
       const folderList = await folderService.getFolderList(queryData, sortBy);

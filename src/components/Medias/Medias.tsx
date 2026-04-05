@@ -8,6 +8,7 @@ import { useAppDispatch, useAppSelector } from "../../hooks/store";
 import { setMediaFilter, setSortBy } from "../../reducers/filter";
 import Spinner from "../Spinner/Spinner";
 import { removeNavigationMap } from "../../reducers/selected";
+import { useTranslation } from "react-i18next";
 
 const Medias = memo(
   ({ scrollDivRef }: { scrollDivRef: React.RefObject<HTMLDivElement> }) => {
@@ -25,6 +26,7 @@ const Medias = memo(
       return state.selected.navigationMap[window.location.pathname];
     });
     const isFetchingNextPage = useRef(false);
+    const { t } = useTranslation();
 
     const dispatch = useAppDispatch();
 
@@ -86,24 +88,22 @@ const Medias = memo(
 
     const title = (() => {
       if (mediaFilter === "all") {
-        return "Photos and Videos";
+        return t("medias.title_all");
       } else if (mediaFilter === "photos") {
-        return "Photos";
+        return t("medias.title_photos");
       } else if (mediaFilter === "videos") {
-        return "Videos";
+        return t("medias.title_videos");
       }
     })();
 
     return (
-      <div className="w-full overflow-y-scroll select-none" ref={scrollDivRef}>
-        <div className="flex flex-row justify-between items-center mt-2 p-[17px_15px] desktopMode:p-[17px_40px] mb-2">
-          <h2 className={classNames("m-0 text-xl font-medium")}>{title}</h2>
-          <div className="flex flex-row items-center">
-            <a className="mr-2" onClick={switchOrderSortBy}>
+      <div className="w-full overflow-y-scroll select-none relative" ref={scrollDivRef}>
+        <div className="flex flex-row justify-between items-center mt-2 p-4 desktopMode:px-8 mb-2 bg-white sticky top-0 z-20 shadow-sm border-b border-gray-100">
+          <h2 className={classNames("m-0 text-[18px] font-medium text-[#1f1f1f]")}>{title}</h2>
+          <div className="flex flex-row items-center gap-2">
+            <a className="p-2 rounded-full hover:bg-black/5 transition-colors flex items-center justify-center cursor-pointer" onClick={switchOrderSortBy}>
               <svg
-                className="h-3 w-3 cursor-pointer animate"
-                width="6"
-                height="10"
+                className="h-4 w-4 text-[#5f6368] animate-movement"
                 viewBox="0 0 6 10"
                 fill="none"
                 xmlns="http://www.w3.org/2000/svg"
@@ -123,23 +123,24 @@ const Medias = memo(
               </svg>
             </a>
             <select
-              className="text-sm font-medium appearance-none bg-white"
+              className="text-[14px] font-medium appearance-none bg-transparent text-[#5f6368] cursor-pointer outline-none hover:text-[#1f1f1f] transition-colors"
               onChange={mediaFilterOnChange}
               value={mediaFilter}
             >
-              <option value="all">All</option>
-              <option value="photos">Photos</option>
-              <option value="videos">Videos</option>
+              <option value="all">{t("medias.filter_all")}</option>
+              <option value="photos">{t("medias.filter_photos")}</option>
+              <option value="videos">{t("medias.filter_videos")}</option>
             </select>
           </div>
         </div>
+
         {!isLoadingFiles && (
           <div
             className={classNames(
-              "grid grid-cols-[repeat(auto-fill,minmax(100px,1fr))] gap-[2px] p-0 desktopMode:px-[40px]"
+              "grid grid-cols-[repeat(auto-fill,minmax(120px,1fr))] md:grid-cols-[repeat(auto-fill,minmax(180px,1fr))] gap-[2px] p-0.5 desktopMode:px-8 bg-white"
             )}
           >
-            <div className="fixed bottom-0 flex justify-center items-center right-0 left-0 z-10">
+            <div className="fixed bottom-0 flex justify-center items-center right-0 left-0 z-30 pointer-events-none">
               <MultiSelectBar />
             </div>
             {files?.pages.map((filePage, index) => (
@@ -151,17 +152,17 @@ const Medias = memo(
             ))}
           </div>
         )}
+        
         {isLoadingFiles && (
-          <div className="w-full flex justify-center items-center h-full">
+          <div className="w-full flex justify-center items-center h-[50vh]">
             <Spinner />
           </div>
         )}
         {isFetchingNextPageState && (
-          <div className="w-full flex justify-center items-center mt-4">
+          <div className="w-full flex justify-center items-center mt-6 mb-6">
             <Spinner />
           </div>
         )}
-        {/* @ts-ignore */}
         <div ref={sentinelRef} className="h-1"></div>
       </div>
     );

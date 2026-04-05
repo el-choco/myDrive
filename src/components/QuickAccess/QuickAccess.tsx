@@ -4,11 +4,17 @@ import { useQuickFiles } from "../../hooks/files";
 import classNames from "classnames";
 import { useUtils } from "../../hooks/utils";
 import ChevronOutline from "../../icons/ChevronOutline";
+import { useTranslation } from "react-i18next";
 
 const QuickAccess = memo(() => {
   const { data: quickfilesList } = useQuickFiles(false);
   const [quickAccessExpanded, setQuickAccessExpanded] = useState(false);
   const { isHome } = useUtils();
+  const { t } = useTranslation();
+
+  if (!quickfilesList || quickfilesList.length === 0) {
+    return null;
+  }
 
   return (
     <div
@@ -16,7 +22,9 @@ const QuickAccess = memo(() => {
       style={isHome ? { display: "block" } : { display: "none" }}
     >
       <div className="flex flex-row items-center justify-between mb-5">
-        <h2 className=" text-[#212b36] text-xl font-medium">Quick Access</h2>
+        <h2 className="text-[#212b36] text-xl font-medium">
+          {t("home.quick_access")}
+        </h2>
         <ChevronOutline
           onClick={() => setQuickAccessExpanded(!quickAccessExpanded)}
           className={classNames(
@@ -31,7 +39,7 @@ const QuickAccess = memo(() => {
       <div
         className={classNames(
           "grid animate-movement grid-cols-[repeat(auto-fit,minmax(47%,45%))] xs:grid-cols-[repeat(auto-fill,minmax(160px,1fr))] gap-[16px]",
-          quickfilesList?.length === 1
+          quickfilesList.length === 1
             ? "justify-normal"
             : "justify-center xs:justify-normal",
           {
@@ -41,7 +49,7 @@ const QuickAccess = memo(() => {
           }
         )}
       >
-        {quickfilesList?.map((file) => (
+        {quickfilesList.map((file) => (
           <QuickAccessItem key={file._id} file={file} />
         ))}
       </div>

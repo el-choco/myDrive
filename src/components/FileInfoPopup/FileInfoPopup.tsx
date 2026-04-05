@@ -6,7 +6,7 @@ import ActionsIcon from "../../icons/ActionsIcon";
 import { useContextMenu } from "../../hooks/contextMenu";
 import ContextMenu from "../ContextMenu/ContextMenu";
 import { resetPopupSelect } from "../../reducers/selected";
-import { getFileColor, getFileExtension } from "../../utils/files";
+import { getFileColor } from "../../utils/files";
 import bytes from "bytes";
 import dayjs from "dayjs";
 import LockIcon from "../../icons/LockIcon";
@@ -16,10 +16,13 @@ import StorageIcon from "../../icons/StorageIcon";
 import CalendarIcon from "../../icons/CalendarIcon";
 import DownloadIcon from "../../icons/DownloadIcon";
 import { toast } from "react-toastify";
+import classNames from "classnames";
+import { useTranslation } from "react-i18next";
 
 const FileInfoPopup = () => {
   const file = useAppSelector((state) => state.selected.popupModal.file)!;
   const dispatch = useAppDispatch();
+  const { t } = useTranslation();
   const {
     onContextMenu,
     closeContextMenu,
@@ -31,12 +34,10 @@ const FileInfoPopup = () => {
   } = useContextMenu();
   const [animate, setAnimate] = useState(false);
 
-  const fileExtension = getFileExtension(file.filename, 3);
-
   const imageColor = getFileColor(file.filename);
 
   const formattedDate = useMemo(
-    () => dayjs(file.uploadDate).format("MM/DD/YYYY hh:mma"),
+    () => dayjs(file.uploadDate).format("MMM D, YYYY"),
     [file.uploadDate]
   );
 
@@ -64,17 +65,17 @@ const FileInfoPopup = () => {
 
   const permissionText = (() => {
     if (file.metadata.linkType === "one") {
-      return `Temporary`;
+      return t("share_popup.type_temporary");
     } else if (file.metadata.linkType === "public") {
-      return "Public";
+      return t("share_popup.type_public");
     } else {
-      return "Private";
+      return t("share_popup.type_private");
     }
   })();
 
   const copyName = () => {
     navigator.clipboard.writeText(file.filename);
-    toast.success("Filename Copied");
+    toast.success(t("toast.link_copied")); // Using copied generic toast
   };
 
   useEffect(() => {
@@ -92,14 +93,27 @@ const FileInfoPopup = () => {
     };
   }, []);
 
+  const fileIconSvg = (
+    <svg
+      xmlns="http://www.w3.org/2000/svg"
+      viewBox="0 0 24 24"
+      className="w-full h-full"
+    >
+      <path
+        d="M13,9V3.5L18.5,9M6,2C4.89,2 4,2.89 4,4V20A2,2 0 0,0 6,22H18A2,2 0 0,0 20,20V8L14,2H6Z"
+        fill={imageColor}
+      />
+    </svg>
+  );
+
   return (
     <div
-      className="w-screen dynamic-height bg-black bg-opacity-80 absolute top-0 left-0 right-0 bottom-0 z-50 flex justify-center items-center flex-col"
+      className="w-screen dynamic-height bg-black/40 backdrop-blur-sm absolute top-0 left-0 right-0 bottom-0 z-[60] flex justify-center items-center flex-col transition-opacity duration-200"
       id="outer-wrapper"
       onClick={outterWrapperClick}
     >
       {contextMenuState.selected && (
-        <div onClick={clickStopPropagation}>
+        <div onClick={clickStopPropagation} className="z-[70]">
           <ContextMenu
             quickItemMode={false}
             contextSelected={contextMenuState}
@@ -108,84 +122,92 @@ const FileInfoPopup = () => {
           />
         </div>
       )}
+      
       <div
-        className="absolute top-5 flex justify-between w-full"
-        id="actions-wrapper"
+        className={classNames(
+          "bg-white w-full max-w-[480px] rounded-2xl shadow-2xl flex flex-col overflow-hidden transition-all duration-300 ease-out transform",
+          animate ? "scale-100 opacity-100 translate-y-0" : "scale-95 opacity-0 translate-y-4"
+        )}
       >
-        <div className="ml-4 flex items-center">
-          <span className="inline-flex items-center mr-4 max-w-7 min-w-7 min-h-7 max-h-7">
-            <div
-              className="h-7 w-7 bg-red-500 rounded-md flex flex-row justify-center items-center"
-              style={{ background: imageColor }}
+        <div className="flex items-center justify-between p-4 px-6 border-b border-gray-100">
+          <div className="flex items-center flex-1 min-w-0 pr-4">
+             <div className="flex flex-col w-full">
+                <p className="text-[#1f1f1f] text-[18px] font-medium m-0 truncate">
+                   {file.filename}
+                </p>
+                <div className="flex items-center mt-1">
+                  <span className="w-4 h-4 mr-1.5 opacity-80 shrink-0">
+                    {fileIconSvg}
+                  </span>
+                  <p className="text-[#5f6368] text-[13px] truncate m-0 font-medium">
+                     {t("right_section.info_title")}
+                  </p>
+                </div>
+             </div>
+          </div>
+          <div className="flex items-center gap-1 shrink-0">
+            <div 
+              onClick={onContextMenu}
+              className="p-2 rounded-full hover:bg-black/5 cursor-pointer transition-colors"
             >
-              <span className="font-semibold text-[9.5px] text-white">
-                {fileExtension}
-              </span>
+              <ActionsIcon className="w-5 h-5 text-[#5f6368]" />
             </div>
-          </span>
-          <p className="text-md text-white text-ellipsis overflow-hidden max-w-[200px] md:max-w-[600px] whitespace-nowrap">
-            {file.filename}
-          </p>
+            <div 
+              className="p-2 rounded-full hover:bg-black/5 cursor-pointer transition-colors"
+              onClick={closePhotoViewer}
+            >
+              <CloseIcon className="w-5 h-5 text-[#5f6368]" />
+            </div>
+          </div>
         </div>
-        <div className="flex mr-4">
-          <div onClick={onContextMenu} id="action-context-wrapper">
-            <ActionsIcon
-              className="pointer text-white w-h h-6 mr-4 cursor-pointer"
-              id="action-context-icon"
+
+        <div className="p-6">
+          <div className="flex items-center bg-[#f1f3f4] rounded-full p-1 pl-4 mb-6 border border-transparent hover:border-gray-300 transition-colors focus-within:border-[#1a73e8] focus-within:bg-white focus-within:shadow-sm overflow-hidden h-[44px]">
+            <input
+              className="bg-transparent border-none outline-none text-[#3c4043] text-[13px] w-full h-full"
+              value={file.filename}
+              readOnly
             />
+            <button
+              className="px-4 py-1.5 rounded-full text-[13px] font-medium bg-white text-[#1a73e8] hover:bg-[#f8f9fa] shadow-sm cursor-pointer shrink-0 outline-none border-none ml-2 mr-1"
+              onClick={copyName}
+            >
+              {t("share_popup.copy_link").replace("Link", t("files.col_name"))}
+            </button>
           </div>
 
-          <div onClick={closePhotoViewer} id="action-close-wrapper">
-            <CloseIcon
-              className="pointer text-white w-6 h-6 cursor-pointer"
-              id="action-close-icon"
-            />
+          <div className="flex flex-col gap-4 px-2">
+            <div className="flex items-center">
+              <div className="w-8 flex justify-center shrink-0">
+                 {!file.metadata.linkType && <LockIcon className="w-5 h-5 text-[#5f6368]" />}
+                 {file.metadata.linkType === "one" && <OneIcon className="w-5 h-5 text-[#5f6368]" />}
+                 {file.metadata.linkType === "public" && <PublicIcon className="w-5 h-5 text-[#5f6368]" />}
+              </div>
+              <p className="m-0 text-[#3c4043] text-[14px]">{permissionText}</p>
+            </div>
+            
+            <div className="flex items-center">
+              <div className="w-8 flex justify-center shrink-0">
+                 <StorageIcon className="w-5 h-5 text-[#5f6368]" />
+              </div>
+              <p className="m-0 text-[#3c4043] text-[14px]">{fileSize}</p>
+            </div>
+
+            <div className="flex items-center">
+              <div className="w-8 flex justify-center shrink-0">
+                 <CalendarIcon className="w-5 h-5 text-[#5f6368]" />
+              </div>
+              <p className="m-0 text-[#3c4043] text-[14px]">{formattedDate}</p>
+            </div>
           </div>
-        </div>
-      </div>
-      <div
-        className="w-[90%] sm:w-[500px] p-6 bg-white rounded-md animate-easy"
-        style={{ marginTop: !animate ? "calc(100vh + 350px" : 0 }}
-      >
-        <div className="bg-light-primary p-6 rounded-md flex items-center space-x-2">
-          <input
-            className="rounded-md w-full text-xs h-10 p-2"
-            value={file.filename}
-          />
-          <button
-            className="bg-primary text-white hover:bg-primary-hover text-xs w-24 min-w-20 p-1 py-3 rounded-md"
-            onClick={copyName}
-          >
-            Copy name
-          </button>
-        </div>
-        <p className="mt-4">File details</p>
-        <div className="mt-2 text-xs space-y-2">
-          <div className="flex flex-row items-center">
-            {!file.metadata.linkType && <LockIcon className="w-5 h-5" />}
-            {file.metadata.linkType === "one" && (
-              <OneIcon className="w-5 h-5" />
-            )}
-            {file.metadata.linkType === "public" && (
-              <PublicIcon className="w-5 h-5" />
-            )}
-            <p className="ml-2 text-gray-500">{permissionText}</p>
-          </div>
-          <div className="flex flex-row items-center">
-            <StorageIcon className="w-5 h-5" />
-            <p className="ml-2 text-gray-500">{fileSize}</p>
-          </div>
-          <div className="flex flex-row items-center" items-center>
-            <CalendarIcon className="w-5 h-5" />
-            <p className="ml-2 text-gray-500">{formattedDate}</p>
-          </div>
-          <div className="flex w-full justify-center items-center pt-4">
+
+          <div className="mt-8 flex justify-center">
             <button
-              className="bg-primary text-white hover:bg-primary-hover text-xs p-1 py-3 rounded-md flex items-center justify-center w-40 space-x-2"
+              className="bg-[#1a73e8] hover:bg-[#1557b0] text-white px-6 py-2.5 rounded-full text-[14px] font-medium transition-colors flex items-center justify-center gap-2 outline-none border-none cursor-pointer"
               onClick={downloadItem}
             >
               <DownloadIcon className="w-5 h-5" />
-              <p>Download</p>
+              <span>{t("context_menu.download")}</span>
             </button>
           </div>
         </div>

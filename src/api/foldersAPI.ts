@@ -9,6 +9,8 @@ interface QueryKeyParams {
   sortBy?: string;
   limit?: number;
   trashMode?: boolean;
+  typeFilter?: string; // <--- NEU
+  dateFilter?: string; // <--- NEU
 }
 
 // GET
@@ -16,7 +18,9 @@ interface QueryKeyParams {
 export const getFoldersListAPI = async ({
   queryKey,
 }: QueryFunctionContext<[string, QueryKeyParams]>) => {
-  const [_key, { parent, search, sortBy, limit, trashMode }] = queryKey;
+  // NEU: typeFilter und dateFilter auslesen
+  const [_key, { parent, search, sortBy, limit, trashMode, typeFilter, dateFilter }] = queryKey;
+  
   const response = await axios.get(`/folder-service/list`, {
     params: {
       parent,
@@ -24,6 +28,8 @@ export const getFoldersListAPI = async ({
       sortBy,
       limit,
       trashMode,
+      typeFilter, // <--- NEU
+      dateFilter, // <--- NEU
     },
   });
   return response.data;

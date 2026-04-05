@@ -9,8 +9,8 @@ import "regenerator-runtime/runtime";
 import "react-circular-progressbar/dist/styles.css";
 import "react-toastify/dist/ReactToastify.css";
 import { QueryClient, QueryClientProvider } from "react-query";
-// import '../node_modules/@fortawesome/fontawesome-free/css/all.css';
-// import '../node_modules/@fortawesome/fontawesome-free/js/all.js';
+
+import "./i18n";
 
 const queryClient = new QueryClient();
 

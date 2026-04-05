@@ -1,8 +1,7 @@
-import { memo, useEffect, useMemo, useState } from "react";
+import { memo, useEffect, useState } from "react";
 import CloseIcon from "../../icons/CloseIcon";
 import { useAppDispatch, useAppSelector } from "../../hooks/store";
-import { getFileColor, getFileExtension } from "../../utils/files";
-import bytes from "bytes";
+import { getFileColor } from "../../utils/files";
 import {
   makeOneTimePublicAPI,
   makePublicAPI,
@@ -18,6 +17,8 @@ import { toast } from "react-toastify";
 import LockIcon from "../../icons/LockIcon";
 import OneIcon from "../../icons/OneIcon";
 import PublicIcon from "../../icons/PublicIcon";
+import classNames from "classnames";
+import { useTranslation } from "react-i18next";
 
 const SharePopup = memo(() => {
   const file = useAppSelector((state) => state.selected.shareModal.file)!;
@@ -30,10 +31,9 @@ const SharePopup = memo(() => {
   const { refetch: refetchFiles } = useFiles(false);
   const { refetch: refetchQuickFiles } = useQuickFiles(false);
   const [animate, setAnimate] = useState(false);
+  const { t } = useTranslation();
 
   const imageColor = getFileColor(file.filename);
-
-  const fileExtension = getFileExtension(file.filename, 3);
 
   const makePublic = async () => {
     try {
@@ -41,9 +41,9 @@ const SharePopup = memo(() => {
       const { file: updatedFile } = await toast.promise(
         makePublicAPI(file._id),
         {
-          pending: "Making Public...",
-          success: "Public Link Generated",
-          error: "Error Making Public",
+          pending: t("toast.making_public"),
+          success: t("toast.public_link_generated"),
+          error: t("toast.error_making_public"),
         }
       );
       dispatch(
@@ -70,9 +70,9 @@ const SharePopup = memo(() => {
       const { file: updatedFile } = await toast.promise(
         makeOneTimePublicAPI(file._id),
         {
-          pending: "Making Public...",
-          success: "Public Link Generated",
-          error: "Error Making Public",
+          pending: t("toast.making_public"),
+          success: t("toast.public_link_generated"),
+          error: t("toast.error_making_public"),
         }
       );
       dispatch(
@@ -97,9 +97,9 @@ const SharePopup = memo(() => {
     try {
       setUpdating(true);
       const updatedFile = await toast.promise(removeLinkAPI(file._id), {
-        pending: "Removing Link...",
-        success: "Link Removed",
-        error: "Error Removing Link",
+        pending: t("toast.removing_link"),
+        success: t("toast.link_removed"),
+        error: t("toast.error_removing_link"),
       });
       dispatch(
         setMainSelect({
@@ -123,7 +123,7 @@ const SharePopup = memo(() => {
   const copyLink = () => {
     if (shareType === "private") return;
     navigator.clipboard.writeText(shareLink);
-    toast.success("Link Copied");
+    toast.success(t("toast.link_copied"));
   };
 
   const closeShareModal = () => {
@@ -138,18 +138,17 @@ const SharePopup = memo(() => {
 
   const permissionText = (() => {
     if (shareType === "one") {
-      return `This file will be available for download one time, 
-      after it is downloaded once the file will then automatically be marked as private.`;
+      return t("share_popup.permission_one");
     } else if (shareType === "public") {
-      return "Anyone with the link can view and download this file";
+      return t("share_popup.permission_public");
     } else {
-      return "Only you can view and download this file";
+      return t("share_popup.permission_private");
     }
   })();
 
   const linkPreviewText = (() => {
     if (shareType === "private") {
-      return "Document is private";
+      return t("share_popup.document_private");
     } else {
       return shareLink;
     }
@@ -184,72 +183,100 @@ const SharePopup = memo(() => {
 
   return (
     <div
-      className="w-screen dynamic-height bg-black bg-opacity-80 absolute top-0 left-0 right-0 bottom-0 z-50 flex justify-center items-center flex-col"
+      className="w-screen dynamic-height bg-black/40 backdrop-blur-sm absolute top-0 left-0 right-0 bottom-0 z-[60] flex justify-center items-center flex-col transition-opacity duration-200"
       id="outer-wrapper"
       onClick={outterWrapperClick}
     >
       <div
-        className="absolute top-[20px] flex justify-between w-full"
-        id="actions-wrapper"
+        className={classNames(
+          "bg-white w-full max-w-[520px] rounded-2xl shadow-2xl flex flex-col overflow-hidden transition-all duration-300 ease-out transform",
+          animate ? "scale-100 opacity-100 translate-y-0" : "scale-95 opacity-0 translate-y-4"
+        )}
       >
-        <div className="ml-4 flex items-center">
-          <span className="inline-flex items-center mr-[15px] max-w-[27px] min-w-[27px] min-h-[27px] max-h-[27px]">
-            <div
-              className="h-[27px] w-[27px] bg-red-500 rounded-[3px] flex flex-row justify-center items-center"
-              style={{ background: imageColor }}
-            >
-              <span className="font-semibold text-[9.5px] text-white">
-                {fileExtension}
-              </span>
-            </div>
-          </span>
-          <p className="text-md text-white text-ellipsis overflow-hidden max-w-[200px] md:max-w-[600px] whitespace-nowrap">
-            {file.filename}
-          </p>
-        </div>
-        <div className="flex mr-4">
-          <div id="action-close-wrapper" onClick={closeShareModal}>
-            <CloseIcon className="text-white w-[25px] h-[25px] cursor-pointer" />
+        <div className="flex items-center justify-between p-4 px-6 border-b border-gray-100">
+          <div className="flex items-center flex-1 min-w-0 pr-4">
+             <div className="flex flex-col">
+                <p className="text-[#1f1f1f] text-[18px] font-medium m-0">
+                  {t("share_popup.title")}
+                </p>
+                <div className="flex items-center mt-1">
+                  <svg
+                    xmlns="http://www.w3.org/2000/svg"
+                    viewBox="0 0 24 24"
+                    className="w-4 h-4 mr-1.5 opacity-80 shrink-0"
+                  >
+                    <path
+                      d="M13,9V3.5L18.5,9M6,2C4.89,2 4,2.89 4,4V20A2,2 0 0,0 6,22H18A2,2 0 0,0 20,20V8L14,2H6Z"
+                      fill={imageColor}
+                    />
+                  </svg>
+                  <p className="text-[#5f6368] text-[13px] truncate m-0 font-medium">
+                     {file.filename}
+                  </p>
+                </div>
+             </div>
+          </div>
+          <div 
+            className="p-2 rounded-full hover:bg-black/5 cursor-pointer transition-colors shrink-0"
+            onClick={closeShareModal}
+          >
+            <CloseIcon className="w-5 h-5 text-[#5f6368]" />
           </div>
         </div>
-      </div>
-      <div
-        className="w-[90%] sm:w-[500px] p-6 bg-white rounded-md animate-easy"
-        style={{ marginTop: !animate ? "calc(100vh + 340px" : 0 }}
-      >
-        <p>Share file</p>
-        <div className="bg-light-primary p-6 rounded-md mt-4 flex items-center space-x-2">
-          <input
-            className="rounded-md w-full text-xs h-10 p-2"
-            value={linkPreviewText}
-          />
-          <button
-            className="bg-primary text-white hover:bg-primary-hover text-xs w-20 p-1 py-3 rounded-md"
-            onClick={copyLink}
-          >
-            Copy link
-          </button>
+
+        <div className="p-6">
+          <p className="text-[14px] font-medium text-[#3c4043] mb-3 m-0">{t("share_popup.general_access")}</p>
+          <div className="flex items-center bg-[#f8f9fa] rounded-xl p-3 border border-gray-100">
+            <div className="p-2 rounded-full bg-[#e9eef6] mr-4 shrink-0">
+              {shareType === "private" && <LockIcon className="w-5 h-5 text-[#1a73e8]" />}
+              {shareType === "one" && <OneIcon className="w-5 h-5 text-[#1a73e8]" />}
+              {shareType === "public" && <PublicIcon className="w-5 h-5 text-[#1a73e8]" />}
+            </div>
+            
+            <div className="flex flex-col flex-1 min-w-0">
+              <div className="flex items-center">
+                 <select
+                  className="text-[14px] font-medium appearance-none bg-transparent text-[#1f1f1f] cursor-pointer outline-none transition-colors border-none p-0 pr-4 relative"
+                  value={shareType}
+                  onChange={selectOnChange}
+                  disabled={updating}
+                >
+                  <option value="private">{t("share_popup.type_private")}</option>
+                  <option value="public">{t("share_popup.type_public")}</option>
+                  <option value="one">{t("share_popup.type_temporary")}</option>
+                </select>
+                {updating && (
+                  <div className="w-3.5 h-3.5 border-2 border-[#1a73e8] border-t-transparent rounded-full animate-spin ml-2"></div>
+                )}
+              </div>
+              <p className="text-[12px] text-[#5f6368] m-0 mt-0.5 leading-tight">
+                {permissionText}
+              </p>
+            </div>
+          </div>
+
+          <div className="mt-6 flex items-center justify-between">
+            <div className="flex items-center bg-[#f1f3f4] rounded-full flex-1 mr-4 border border-transparent hover:border-gray-300 transition-colors focus-within:border-[#1a73e8] focus-within:bg-white focus-within:shadow-[0_1px_1px_0_rgba(65,69,73,0.3),0_1px_3px_1px_rgba(65,69,73,0.15)] overflow-hidden pr-1 h-[40px]">
+              <input
+                className="bg-transparent border-none outline-none text-[#3c4043] text-[13px] w-full px-4 h-full"
+                value={linkPreviewText}
+                readOnly
+              />
+              <button
+                className={classNames(
+                  "px-4 py-1.5 rounded-full text-[13px] font-medium transition-colors shrink-0 outline-none border-none",
+                  shareType === "private" 
+                    ? "bg-transparent text-[#5f6368] cursor-not-allowed" 
+                    : "bg-white text-[#1a73e8] hover:bg-[#f8f9fa] shadow-sm cursor-pointer"
+                )}
+                onClick={copyLink}
+                disabled={shareType === "private"}
+              >
+                {t("share_popup.copy_link")}
+              </button>
+            </div>
+          </div>
         </div>
-        <p className="mt-6">Permission</p>
-        <div className="flex mt-6 items-center">
-          {shareType === "private" && <LockIcon className="w-5 h-5 mr-2" />}
-          {shareType === "one" && <OneIcon className="w-5 h-5 mr-2" />}
-          {shareType === "public" && <PublicIcon className="w-5 h-5 mr-2" />}
-          <select
-            className="text-sm"
-            value={shareType}
-            onChange={selectOnChange}
-            disabled={updating}
-          >
-            <option value="private">Private</option>
-            <option value="public">Public</option>
-            <option value="one">Temporary</option>
-          </select>
-          {updating && (
-            <div className="border-t border-primary rounded-full animate-spin h-4 w-4 ml-2"></div>
-          )}
-        </div>
-        <p className="text-xs mt-1.5 text-gray-500">{permissionText}</p>
       </div>
     </div>
   );

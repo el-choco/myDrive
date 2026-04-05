@@ -15,11 +15,12 @@ import CircleRightIcon from "../../icons/CircleRightIcon";
 import { useFiles, useQuickFiles } from "../../hooks/files";
 import { FileInterface } from "../../types/file";
 import { InfiniteData } from "react-query";
-import { getFileColor, getFileExtension } from "../../utils/files";
+import { getFileColor } from "../../utils/files";
 import Spinner from "../Spinner/Spinner";
 import { toast } from "react-toastify";
 import getBackendURL from "../../utils/getBackendURL";
 import classNames from "classnames";
+import { useTranslation } from "react-i18next";
 
 interface PhotoViewerPopupProps {
   file: FileInterface;
@@ -43,6 +44,7 @@ const PhotoViewerPopup: React.FC<PhotoViewerPopupProps> = memo((props) => {
   const { data: quickFiles } = useQuickFiles(false);
   const { data: files, fetchNextPage } = useFiles(false);
   const dispatch = useAppDispatch();
+  const { t } = useTranslation();
   const {
     onContextMenu,
     closeContextMenu,
@@ -52,8 +54,6 @@ const PhotoViewerPopup: React.FC<PhotoViewerPopupProps> = memo((props) => {
     clickStopPropagation,
     ...contextMenuState
   } = useContextMenu();
-
-  const fileExtension = getFileExtension(file.filename, 3);
 
   const imageColor = getFileColor(file.filename);
 
@@ -69,9 +69,9 @@ const PhotoViewerPopup: React.FC<PhotoViewerPopupProps> = memo((props) => {
       setIsVideoLoading(false);
     } catch (e) {
       console.log("Error getting video", e);
-      toast.error("Error getting video");
+      toast.error(t("toast.error_getting_video"));
     }
-  }, [file._id]);
+  }, [file._id, t]);
 
   const cleanUpVideo = useCallback(async () => {
     if (!file.metadata.isVideo || !videoRef.current) return;
@@ -149,16 +149,6 @@ const PhotoViewerPopup: React.FC<PhotoViewerPopupProps> = memo((props) => {
           })
         );
       }
-      // TODO: Perhaps implement this if needed in the future
-      //   else {
-      //     console.log("fetch prev");
-      //     const response = await fetchPreviousPage();
-      //     if (!response.data?.pages) return;
-      //     const fetchedPrevItem = findPrevFilesItem(response.data);
-      //     if (fetchedPrevItem) {
-      //       dispatch(setPopupSelect({ type: "file", file: fetchedPrevItem }));
-      //     }
-      //   }
     }
   };
 
@@ -285,7 +275,7 @@ const PhotoViewerPopup: React.FC<PhotoViewerPopupProps> = memo((props) => {
   return (
     <div
       id="outer-wrapper"
-      className="w-screen dynamic-height bg-black bg-opacity-80 absolute top-0 left-0 right-0 bottom-0 z-50 flex justify-center items-center flex-col"
+      className="w-screen dynamic-height bg-black/90 absolute top-0 left-0 right-0 bottom-0 z-[100] flex justify-center items-center flex-col backdrop-blur-sm"
       onClick={outterWrapperClick}
     >
       {contextMenuState.selected && (
@@ -300,75 +290,94 @@ const PhotoViewerPopup: React.FC<PhotoViewerPopupProps> = memo((props) => {
       )}
 
       <div
-        className="absolute top-[20px] flex justify-between w-full"
+        className="absolute top-0 left-0 w-full flex justify-between p-4 bg-gradient-to-b from-black/50 to-transparent z-10"
         id="actions-wrapper"
       >
-        <div className="ml-4 flex items-center">
-          <span className="inline-flex items-center mr-[15px] max-w-[27px] min-w-[27px] min-h-[27px] max-h-[27px]">
-            <div
-              className="h-[27px] w-[27px] bg-red-500 rounded-[3px] flex flex-row justify-center items-center"
-              style={{ background: imageColor }}
-            >
-              <span className="font-semibold text-[9.5px] text-white select-none">
-                {fileExtension}
-              </span>
-            </div>
-          </span>
-          <p className="text-md text-white text-ellipsis overflow-hidden max-w-[200px] md:max-w-[600px] whitespace-nowrap select-none">
+        <div className="flex items-center pl-2">
+          <svg
+            xmlns="http://www.w3.org/2000/svg"
+            viewBox="0 0 24 24"
+            className="w-6 h-6 mr-3 opacity-90 shrink-0"
+          >
+            <path
+              d="M13,9V3.5L18.5,9M6,2C4.89,2 4,2.89 4,4V20A2,2 0 0,0 6,22H18A2,2 0 0,0 20,20V8L14,2H6Z"
+              fill={imageColor}
+            />
+          </svg>
+          <p className="text-[16px] font-medium text-white text-ellipsis overflow-hidden max-w-[200px] md:max-w-[600px] whitespace-nowrap select-none m-0 drop-shadow-md">
             {file.filename}
           </p>
         </div>
-        <div className="flex mr-4">
-          <div onClick={onContextMenu} id="action-context-wrapper">
-            <ActionsIcon
-              className="pointer text-white w-[20px] h-[25px] mr-4 cursor-pointer hover:text-white-hover"
-              id="action-context-icon"
-            />
+        <div className="flex items-center gap-2 pr-2">
+          <div 
+            onClick={onContextMenu} 
+            className="p-2 rounded-full hover:bg-white/10 cursor-pointer transition-colors"
+          >
+            <ActionsIcon className="text-white w-5 h-5 drop-shadow-md" />
           </div>
 
-          <div onClick={closePhotoViewer} id="action-close-wrapper">
-            <CloseIcon
-              className="pointer text-white w-[25px] h-[25px] cursor-pointer hover:text-white-hover"
-              id="action-close-icon"
-            />
+          <div 
+            onClick={closePhotoViewer} 
+            className="p-2 rounded-full hover:bg-white/10 cursor-pointer transition-colors"
+          >
+            <CloseIcon className="text-white w-5 h-5 drop-shadow-md" />
           </div>
         </div>
       </div>
+      
       <CircleLeftIcon
         onClick={goToPreviousItem}
-        className="bottom-2 sm:bottom-1/2 fixed left-2 pointer text-white w-[45px] h-[45px] desktopMode:w-[30px] desktopMode:h-[30px] select-none cursor-pointer hover:text-white-hover"
+        className="bottom-6 sm:bottom-1/2 fixed left-4 sm:left-8 text-white/70 hover:text-white w-12 h-12 select-none cursor-pointer transition-colors z-10 drop-shadow-lg"
       />
       <CircleRightIcon
         onClick={goToNextItem}
-        className="bottom-2 sm:bottom-1/2 fixed right-2 pointer text-white w-[45px] h-[45px] desktopMode:w-[30px] desktopMode:h-[30px] select-none cursor-pointer hover:text-white-hover"
+        className="bottom-6 sm:bottom-1/2 fixed right-4 sm:right-8 text-white/70 hover:text-white w-12 h-12 select-none cursor-pointer transition-colors z-10 drop-shadow-lg"
       />
-      <div className="max-w-[95vw] sm:max-w-[80vw] max-h-[70vh] sm:max-h-[80vh] flex justify-center items-center ">
-        {isThumbnailLoading && !thumbnailError && <Spinner />}
+      
+      <div className="max-w-[95vw] sm:max-w-[85vw] max-h-[85vh] flex justify-center items-center relative">
+        {isThumbnailLoading && !thumbnailError && (
+          <div className="absolute inset-0 flex justify-center items-center">
+            <div className="w-8 h-8 border-4 border-white/20 border-t-white rounded-full animate-spin"></div>
+          </div>
+        )}
         {!file.metadata.isVideo && (
           <img
             src={thumbnailURL}
             className={classNames(
-              "max-w-full max-h-full object-contain select-none",
+              "max-w-full max-h-[85vh] object-contain select-none drop-shadow-2xl transition-opacity duration-300",
               {
-                hidden: isThumbnailLoading,
+                "opacity-0": isThumbnailLoading,
+                "opacity-100": !isThumbnailLoading
               }
             )}
             onLoad={() => setIsThumbnailLoading(false)}
             onError={() => setThumbnailError(true)}
+            alt={file.filename}
           />
         )}
         {thumbnailError && (
-          <div className="bg-white p-6 rounded-md">
-            <p className="text-center text-sm">Error loading image</p>
+          <div className="bg-[#1f1f1f] p-8 rounded-2xl border border-white/10 flex flex-col items-center justify-center">
+             <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" className="w-12 h-12 text-[#5f6368] mb-4">
+                <rect x="3" y="3" width="18" height="18" rx="2" ry="2" strokeWidth="2" />
+                <circle cx="8.5" cy="8.5" r="1.5" strokeWidth="2" />
+                <polyline points="21 15 16 10 5 21" strokeWidth="2" />
+             </svg>
+            <p className="text-center text-[14px] text-white/80 font-medium m-0">{t("photo_viewer.error_loading")}</p>
           </div>
         )}
         {file.metadata.isVideo && !isVideoLoading && (
           <video
             src={video}
             ref={videoRef}
-            className="max-w-full max-h-full object-contain"
+            className="max-w-full max-h-[85vh] object-contain drop-shadow-2xl rounded-lg"
             controls
+            autoPlay
           ></video>
+        )}
+        {file.metadata.isVideo && isVideoLoading && (
+           <div className="absolute inset-0 flex justify-center items-center">
+             <div className="w-8 h-8 border-4 border-white/20 border-t-white rounded-full animate-spin"></div>
+           </div>
         )}
       </div>
     </div>

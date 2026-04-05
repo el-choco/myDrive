@@ -1,5 +1,5 @@
 import capitalize from "../../utils/capitalize";
-import React, { memo, useMemo, useRef, useState } from "react";
+import React, { memo, useMemo, useRef, useState, useEffect } from "react";
 import ContextMenu from "../ContextMenu/ContextMenu";
 import { useContextMenu } from "../../hooks/contextMenu";
 import classNames from "classnames";
@@ -9,12 +9,11 @@ import { useAppDispatch, useAppSelector } from "../../hooks/store";
 import { setMainSelect, setMultiSelectMode } from "../../reducers/selected";
 import PlayButtonIcon from "../../icons/PlayIcon";
 import { setPopupSelect } from "../../reducers/selected";
-import ActionsIcon from "../../icons/ActionsIcon";
 import { FileInterface } from "../../types/file";
 import getBackendURL from "../../utils/getBackendURL";
 import dayjs from "dayjs";
-import CalendarIcon from "../../icons/CalendarIcon";
-import ClockIcon from "../../icons/ClockIcon";
+import { getUserDetailedAPI } from "../../api/userAPI";
+import { useTranslation } from "react-i18next";
 
 interface FileItemProps {
   file: FileInterface;
@@ -42,6 +41,9 @@ const FileItem: React.FC<FileItemProps> = memo((props) => {
   const [thumbnailLoaded, setThumbnailLoaded] = useState(false);
   const dispatch = useAppDispatch();
   const lastSelected = useRef(0);
+  const { t } = useTranslation();
+  const [userInitials, setUserInitials] = useState("U");
+
   const {
     onContextMenu,
     closeContextMenu,
@@ -58,11 +60,25 @@ const FileItem: React.FC<FileItemProps> = memo((props) => {
   const formattedFilename = capitalize(file.filename);
 
   const formattedCreatedDate = useMemo(
-    () => dayjs(file.uploadDate).format("MM/DD/YY hh:mma"),
+    () => dayjs(file.uploadDate).format("MMM D, YYYY"),
     [file.uploadDate]
   );
 
-  const fileClick = (e: React.MouseEvent<HTMLDivElement, MouseEvent>) => {
+  useEffect(() => {
+    const fetchUser = async () => {
+      try {
+        const user = await getUserDetailedAPI();
+        if (user && user.email) {
+          setUserInitials(user.email.charAt(0).toUpperCase());
+        }
+      } catch (error) {
+        console.error("Failed to fetch user", error);
+      }
+    };
+    fetchUser();
+  }, []);
+
+  const fileClick = (e: React.MouseEvent<HTMLDivElement | HTMLTableRowElement, MouseEvent>) => {
     const multiSelectKey = e.metaKey || e.ctrlKey;
 
     if (multiSelectMode || multiSelectKey) {
@@ -96,14 +112,48 @@ const FileItem: React.FC<FileItemProps> = memo((props) => {
     lastSelected.current = Date.now();
   };
 
+  const handleDragStart = (e: React.DragEvent<HTMLDivElement | HTMLTableRowElement>) => {
+    e.dataTransfer.setData("application/json", JSON.stringify({ type: "file", id: file._id }));
+    e.dataTransfer.effectAllowed = "move";
+  };
+
+  const fileIconSvg = (
+    <svg
+      xmlns="http://www.w3.org/2000/svg"
+      viewBox="0 0 24 24"
+      className="w-full h-full shrink-0"
+    >
+      <path
+        d="M13,9V3.5L18.5,9M6,2C4.89,2 4,2.89 4,4V20A2,2 0 0,0 6,22H18A2,2 0 0,0 20,20V8L14,2H6Z"
+        fill={imageColor}
+      />
+    </svg>
+  );
+
+  const ownerAvatar = (
+    <div className="flex items-center gap-2">
+      <div className="w-6 h-6 shrink-0 rounded-full flex items-center justify-center bg-transparent">
+        <svg viewBox="0 0 24 24" fill="currentColor" className="w-6 h-6 text-[#5f6368]">
+          <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 3c1.66 0 3 1.34 3 3s-1.34 3-3 3-3-1.34-3-3 1.34-3 3-3zm0 14.2c-2.5 0-4.71-1.28-6-3.22.03-1.99 4-3.08 6-3.08 1.99 0 5.97 1.09 6 3.08-1.29 1.94-3.5 3.22-6 3.22z"/>
+        </svg>
+      </div>
+      <p className={classNames(
+        "m-0 text-[14px]",
+        (elementSelected || elementMultiSelected) ? "text-[#001d35]" : "text-[#1f1f1f]"
+      )}>{t("folders.owner_me")}</p>
+    </div>
+  );
+
   if (listView) {
     return (
       <tr
+        draggable={true}
+        onDragStart={handleDragStart}
         className={classNames(
-          "text-[14px] font-normal border-y",
-          !elementSelected && !elementMultiSelected
-            ? "text-[#212b36] hover:bg-[#f6f5fd]"
-            : "bg-[#3c85ee] animate text-white"
+          "text-[14px] font-normal border-b border-gray-100 cursor-pointer transition-colors duration-200 group",
+          (elementSelected || elementMultiSelected)
+            ? "bg-[#c2e7ff] hover:bg-[#b5e0ff]"
+            : "bg-white hover:bg-[#f1f3f4]"
         )}
         onClick={fileClick}
         onContextMenu={onContextMenu}
@@ -111,34 +161,44 @@ const FileItem: React.FC<FileItemProps> = memo((props) => {
         onTouchMove={onTouchMove}
         onTouchEnd={onTouchEnd}
       >
-        {/* <ContextMenu parent={props.metadata.parent} contextSelected={props.state.contextSelected} closeContext={props.closeContext} downloadFile={props.downloadFile} file={props} changeEditNameMode={props.changeEditNameMode} closeEditNameMode={props.closeEditNameMode} changeDeleteMode={props.changeDeleteMode} startMovingFile={props.startMovingFile}/> */}
-        <td className="p-5">
-          <div className="flex items-center fileTextXL:w-[560px] w-[60px] xxs:w-[160px] xs:w-[260px] fileTextXSM:w-[460px] fileTextLG:w-[440px] fileTextMD:w-[240px] desktopMode:w-[160px]">
-            <span className="inline-flex items-center mr-[15px] max-w-[27px] min-w-[27px] min-h-[27px] max-h-[27px]">
-              <div
-                className="h-7 w-7 bg-red-500 rounded-md flex flex-row justify-center items-center"
-                style={{ background: imageColor }}
-              >
-                <span className="font-semibold text-[9.5px] text-white">
-                  {fileExtension}
-                </span>
-              </div>
+        <td className="p-3 pl-4 rounded-l-full overflow-hidden">
+          <div className="flex items-center w-full">
+            <span className="inline-flex items-center justify-center mr-3 w-6 h-6 shrink-0">
+              {fileIconSvg}
             </span>
-            <p className="m-0 max-h-[30px] overflow-hidden whitespace-nowrap text-ellipsis block">
+            <p className={classNames(
+              "m-0 truncate font-medium",
+              (elementSelected || elementMultiSelected) ? "text-[#001d35]" : "text-[#1f1f1f]"
+            )}>
               {formattedFilename}
             </p>
           </div>
         </td>
-        <td className="p-5 hidden fileListShowDetails:table-cell">
-          <p className="text-center">{bytes(props.file.length)}</p>
+        
+        <td className="p-3 hidden md:table-cell">
+           {ownerAvatar}
         </td>
-        <td className="p-5 hidden fileListShowDetails:table-cell">
-          <p className="text-center whitespace-nowrap">
+
+        <td className="p-3 hidden fileListShowDetails:table-cell">
+          <p className={classNames(
+            "text-sm whitespace-nowrap m-0",
+            (elementSelected || elementMultiSelected) ? "text-[#001d35] opacity-80" : "text-[#5f6368]"
+          )}>
             {formattedCreatedDate}
           </p>
         </td>
-        <td>
-          <div className="flex justify-center items-center">
+
+        <td className="p-3 hidden fileListShowDetails:table-cell">
+          <p className={classNames(
+            "text-sm m-0",
+            (elementSelected || elementMultiSelected) ? "text-[#001d35] opacity-80" : "text-[#5f6368]"
+          )}>
+            {bytes(props.file.length)}
+          </p>
+        </td>
+        
+        <td className="p-3 rounded-r-full">
+          <div className="flex justify-end items-center pr-2">
             {contextMenuState.selected && (
               <div onClick={clickStopPropagation}>
                 <ContextMenu
@@ -149,19 +209,18 @@ const FileItem: React.FC<FileItemProps> = memo((props) => {
                 />
               </div>
             )}
-
-            {/* <ContextMenu parent={props.metadata.parent} contextSelected={props.state.contextSelected} closeContext={props.closeContext} downloadFile={props.downloadFile} file={props} changeEditNameMode={props.changeEditNameMode} closeEditNameMode={props.closeEditNameMode} changeDeleteMode={props.changeDeleteMode} startMovingFile={props.startMovingFile}/> */}
-
-            <a onClick={onContextMenu}>
-              <ActionsIcon
-                className={classNames(
-                  "w-4 h-4",
-                  elementSelected || elementMultiSelected
-                    ? "text-white"
-                    : "text-[#919eab]"
-                )}
-              />
-            </a>
+            
+            <div 
+              className="p-2 rounded-full hover:bg-black/5 transition-colors opacity-0 group-hover:opacity-100"
+              onClick={onContextMenu}
+            >
+              <svg className={classNames(
+                  "w-5 h-5",
+                  (elementSelected || elementMultiSelected) ? "text-[#001d35]" : "text-[#5f6368]"
+                )} viewBox="0 0 24 24" fill="currentColor">
+                <path d="M12 8c1.1 0 2-.9 2-2s-.9-2-2-2-2 .9-2 2 .9 2 2 2zm0 2c-1.1 0-2 .9-2 2s.9 2 2 2 2-.9 2-2-.9-2-2-2zm0 6c-1.1 0-2 .9-2 2s.9 2 2 2 2-.9 2-2-.9-2-2-2z" />
+              </svg>
+            </div>
           </div>
         </td>
       </tr>
@@ -169,11 +228,13 @@ const FileItem: React.FC<FileItemProps> = memo((props) => {
   } else {
     return (
       <div
+        draggable={true}
+        onDragStart={handleDragStart}
         className={classNames(
-          "border rounded-md o transition-all duration-400 ease-in-out cursor-pointer flex items-center justify-center flex-col h-[150px] animiate hover:border-primary overflow-hidden bg-white ",
-          elementSelected || elementMultiSelected
-            ? "border-primary"
-            : "border-gray-third"
+          "rounded-xl overflow-hidden cursor-pointer transition-all duration-200 flex flex-col h-[200px] border",
+          (elementSelected || elementMultiSelected)
+            ? "border-transparent bg-[#c2e7ff] hover:bg-[#b5e0ff]"
+            : "border-[#dadce0] bg-[#f8f9fa] hover:bg-[#f1f3f4]"
         )}
         onClick={fileClick}
         onContextMenu={onContextMenu}
@@ -191,86 +252,59 @@ const FileItem: React.FC<FileItemProps> = memo((props) => {
             />
           </div>
         )}
-        <div
-          className={classNames(
-            "inline-flex items-center w-full bg-white relative",
-            {
-              "mt-2": !thumbnailLoaded,
-            }
-          )}
-        >
+        
+        <div className="w-full h-[140px] bg-[#f1f3f4] relative flex items-center justify-center overflow-hidden border-b border-[#dadce0]">
           {hasThumbnail && (
-            <div
-              className={classNames(
-                "w-full min-h-[88px] max-h-[88px] h-full flex",
-                {
-                  hidden: !thumbnailLoaded,
-                }
-              )}
-            >
+            <>
               <img
-                className="object-cover w-full disable-force-touch"
+                className={classNames(
+                  "object-cover w-full h-full disable-force-touch transition-opacity duration-300",
+                  thumbnailLoaded ? "opacity-100" : "opacity-0"
+                )}
                 src={thumbnailURL}
                 onLoad={() => setThumbnailLoaded(true)}
+                alt={file.filename}
               />
-              {file.metadata.isVideo && (
-                <div className="w-full h-full absolute flex justify-center items-center text-white">
-                  <PlayButtonIcon className="w-[50px] h-[50px]" />
+              {file.metadata.isVideo && thumbnailLoaded && (
+                <div className="absolute inset-0 flex justify-center items-center bg-black/20">
+                  <PlayButtonIcon className="w-12 h-12 text-white opacity-90 drop-shadow-md" />
                 </div>
               )}
-            </div>
-          )}
-          {!thumbnailLoaded && (
-            <>
-              <svg
-                xmlns="http://www.w3.org/2000/svg"
-                xmlnsXlink="http://www.w3.org/1999/xlink"
-                version="1.1"
-                width="150"
-                height="150"
-                viewBox="0 0 24 24"
-                className="w-full min-h-[80px] max-h-[80px] h-full flex"
-              >
-                <path
-                  d="M13,9V3.5L18.5,9M6,2C4.89,2 4,2.89 4,4V20A2,2 0 0,0 6,22H18A2,2 0 0,0 20,20V8L14,2H6Z"
-                  fill={imageColor}
-                />
-              </svg>
-              <div className="w-full h-full absolute flex justify-center items-center text-white mt-3">
-                <p className="text-sm">{fileExtension}</p>
-              </div>
             </>
           )}
-        </div>
-        <div
-          className={classNames(
-            "p-3 overflow-hidden text-ellipsis block w-full animate",
-            elementSelected || elementMultiSelected
-              ? "bg-primary text-white"
-              : "bg-white text-gray-primary"
+          {(!hasThumbnail || !thumbnailLoaded) && (
+            <div className="w-16 h-16 opacity-80">
+              {fileIconSvg}
+            </div>
           )}
-        >
-          <p
-            className={classNames(
-              "text-[14px] leading-[16px] font-normal max-w-full overflow-hidden text-ellipsis whitespace-nowrap animate mb-0",
-              elementSelected || elementMultiSelected
-                ? "text-white"
-                : "text-[#212b36]"
-            )}
-          >
-            {formattedFilename}
-          </p>
-          <div className="flex flex-row items-center mt-2">
-            <ClockIcon className="h-4 w-4 mr-1" />
+        </div>
+
+        <div className="p-3 flex flex-col justify-center h-[60px] bg-transparent">
+          <div className="flex items-center w-full">
+            <span className="w-5 h-5 shrink-0 mr-2 opacity-90">
+               {fileIconSvg}
+            </span>
             <p
               className={classNames(
-                "m-0 font-normal max-w-full whitespace-nowrap text-xs animate block",
-                elementSelected || elementMultiSelected
-                  ? "text-white"
-                  : "text-gray-primary]"
+                "m-0 text-[13px] font-medium truncate",
+                (elementSelected || elementMultiSelected)
+                  ? "text-[#001d35]"
+                  : "text-[#3c4043]"
               )}
             >
-              {formattedCreatedDate}
+              {formattedFilename}
+            </p>
+          </div>
+          <div className="flex items-center mt-1 pl-7">
+            <p
+              className={classNames(
+                "m-0 text-[11px] truncate",
+                (elementSelected || elementMultiSelected)
+                  ? "text-[#001d35] opacity-70"
+                  : "text-[#5f6368]"
+              )}
+            >
+              {formattedCreatedDate} • {bytes(props.file.length)}
             </p>
           </div>
         </div>

@@ -10,15 +10,11 @@ const Homepage = () => {
   );
 
   return (
-    <div>
-      <div className="">
-        <Header />
-        <div className="flex space-between">
-          <MainSection />
-          {showUploader && <Uploader />}
-        </div>
-      </div>
-
+    <div className="h-screen w-screen overflow-hidden bg-white">
+      <Header />
+      <MainSection />
+      {showUploader && <Uploader />}
+      
       <ToastContainer position="bottom-left" pauseOnFocusLoss={false} />
     </div>
   );

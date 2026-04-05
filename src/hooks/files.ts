@@ -27,11 +27,13 @@ import { useFolders } from "./folders";
 
 export const useFiles = (enabled = true) => {
   const params = useParams();
-  // TODO: Remove any
   const sortBy = useAppSelector((state) => state.filter.sortBy);
   const mediaFilter = useAppSelector((state) => state.filter.mediaFilter);
+  const typeFilter = useAppSelector((state) => state.filter.typeFilter);
+  const dateFilter = useAppSelector((state) => state.filter.dateFilter);
   const { isTrash, isMedia } = useUtils();
   const limit = isMedia ? 100 : 50;
+  
   const filesReactQuery: UseInfiniteQueryResult<FileInterface[]> =
     useInfiniteQuery(
       [
@@ -44,6 +46,8 @@ export const useFiles = (enabled = true) => {
           trashMode: isTrash,
           mediaMode: isMedia,
           mediaFilter: mediaFilter,
+          typeFilter,
+          dateFilter,
         },
       ],
       getFilesListAPI,

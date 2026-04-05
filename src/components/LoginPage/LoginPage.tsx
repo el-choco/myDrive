@@ -8,13 +8,14 @@ import {
 import { useLocation, useNavigate } from "react-router-dom";
 import { setUser } from "../../reducers/user";
 import { useAppDispatch } from "../../hooks/store";
-import capitalize from "lodash/capitalize";
 import AlertIcon from "../../icons/AlertIcon";
 import Spinner from "../Spinner/Spinner";
 import { toast, ToastContainer } from "react-toastify";
 import Swal from "sweetalert2";
 import { AxiosError } from "axios";
 import isEmail from "validator/es/lib/isEmail";
+import { useTranslation } from "react-i18next";
+import classNames from "classnames";
 
 const LoginPage = () => {
   const [email, setEmail] = useState("");
@@ -28,6 +29,7 @@ const LoginPage = () => {
   const location = useLocation();
   const navigate = useNavigate();
   const lastSentPassowordReset = useRef(0);
+  const { t } = useTranslation();
 
   const attemptLoginWithToken = async () => {
     setAttemptingLogin(true);
@@ -42,7 +44,7 @@ const LoginPage = () => {
     } catch (e) {
       setAttemptingLogin(false);
       if (window.localStorage.getItem("hasPreviouslyLoggedIn")) {
-        setError("Login Expired");
+        setError(t("login.err_expired"));
         window.localStorage.removeItem("hasPreviouslyLoggedIn");
       }
     }
@@ -61,9 +63,9 @@ const LoginPage = () => {
         e instanceof AxiosError &&
         [400, 401].includes(e.response?.status || 0)
       ) {
-        setError("Incorrect email or password");
+        setError(t("login.err_incorrect"));
       } else {
-        setError("Login Error");
+        setError(t("login.err_login"));
       }
       console.log("Login Error", e);
       setLoadingLogin(false);
@@ -77,7 +79,7 @@ const LoginPage = () => {
       window.localStorage.setItem("hasPreviouslyLoggedIn", "true");
 
       if (createAccountResponse.emailSent) {
-        toast.success("Email Verification Sent");
+        toast.success(t("login.toast_verify_sent"));
       }
 
       dispatch(setUser(createAccountResponse.user));
@@ -85,11 +87,11 @@ const LoginPage = () => {
       setLoadingLogin(false);
     } catch (e) {
       if (e instanceof AxiosError && e.response?.status === 409) {
-        setError("Email Already Exists");
+        setError(t("login.err_exists"));
       } else if (e instanceof AxiosError && e.response?.status === 400) {
-        setError("Validation Error");
+        setError(t("login.err_validation"));
       } else {
-        setError("Create Account Error");
+        setError(t("login.err_create"));
       }
       console.log("Create Account Error", e);
       setLoadingLogin(false);
@@ -101,10 +103,10 @@ const LoginPage = () => {
       const currentDate = Date.now();
       if (currentDate - lastSentPassowordReset.current < 1000 * 60 * 1) {
         await Swal.fire({
-          title: "Please wait 1 minute before resending",
+          title: t("settings.wait_1_min"),
           icon: "warning",
-          confirmButtonColor: "#3085d6",
-          confirmButtonText: "Okay",
+          confirmButtonColor: "#1a73e8",
+          confirmButtonText: t("settings.btn_okay"),
         });
         return;
       }
@@ -114,9 +116,9 @@ const LoginPage = () => {
       setLoadingLogin(true);
 
       await toast.promise(sendPasswordResetAPI(email), {
-        pending: "Sending password reset...",
-        success: "Password Reset Sent",
-        error: "Error Sending Password Reset",
+        pending: t("login.toast_reset_pending"),
+        success: t("login.toast_reset_success"),
+        error: t("login.toast_reset_error"),
       });
 
       setLoadingLogin(false);
@@ -124,11 +126,11 @@ const LoginPage = () => {
       console.log("Create Account Error", e);
       setLoadingLogin(false);
       if (e instanceof AxiosError && e.response?.status === 404) {
-        setError("Email does not exist");
+        setError(t("login.err_not_exist"));
       } else if (e instanceof AxiosError && e.response?.status === 403) {
-        setError("Email Verification Not Enabled");
+        setError(t("login.err_not_enabled"));
       } else {
-        setError("Create Account Failed");
+        setError(t("login.err_reset"));
       }
     }
   };
@@ -160,13 +162,26 @@ const LoginPage = () => {
   const headerTitle = (() => {
     switch (mode) {
       case "login":
-        return "Login to your account";
+        return t("login.title_login");
       case "create":
-        return "Create an account";
+        return t("login.title_create");
       case "reset":
-        return "Reset Password";
+        return t("login.title_reset");
       default:
-        return "Login to your account";
+        return t("login.title_login");
+    }
+  })();
+
+  const headerSubtitle = (() => {
+    switch (mode) {
+      case "login":
+        return t("login.subtitle_login");
+      case "create":
+        return t("login.subtitle_create");
+      case "reset":
+        return t("login.subtitle_reset");
+      default:
+        return "";
     }
   })();
 
@@ -176,9 +191,9 @@ const LoginPage = () => {
     if (mode === "create") {
       if (password.length) {
         if (password.length < 6) {
-          return "Password must be at least 6 characters";
+          return t("settings.err_length");
         } else if (password.length > 256) {
-          return "Password must be less than 256 characters";
+          return t("settings.err_max_length");
         }
       }
 
@@ -187,18 +202,18 @@ const LoginPage = () => {
         verifyPassword.length &&
         password !== verifyPassword
       ) {
-        return "Passwords do not match";
+        return t("settings.err_match");
       }
 
       if (email.length) {
         const isValidEmail = isEmail(email);
 
         if (email.length < 3) {
-          return "Email must be at least 3 characters";
+          return t("login.err_email_short");
         } else if (email.length > 320) {
-          return "Email must be less than 320 characters";
+          return t("login.err_email_long");
         } else if (!isValidEmail) {
-          return "Email is invalid";
+          return t("login.err_email_invalid");
         }
       }
     }
@@ -221,122 +236,151 @@ const LoginPage = () => {
 
   if (attemptingLogin) {
     return (
-      <div>
-        <div className="w-screen dynamic-height flex justify-center items-center">
-          <div>
-            <Spinner />
-          </div>
-        </div>
+      <div className="w-screen h-screen bg-white flex justify-center items-center">
+        <Spinner />
       </div>
     );
   }
 
-  return (
-    <div>
-      <div className="bg-[#F4F4F6] w-screen dynamic-height flex justify-center items-center">
-        <div className="rounded-md shadow-lg bg-white p-10 relative w-[90%] sm:w-[500px] animate-height">
-          <div className="absolute -top-10 left-0 right-0 flex justify-center items-center">
-            <div className="flex items-center justify-center rounded-full bg-white p-3 shadow-md">
-              {!loadingLogin && (
-                <img src="/images/icon.png" alt="logo" className="w-[45px]" />
-              )}
-              {loadingLogin && <Spinner />}
-            </div>
-          </div>
-          <form onSubmit={onSubmit}>
-            <p className="text-[#212B36] font-medium text-[25px] mt-0 mb-[15px] text-center">
-              {headerTitle}
-            </p>
-            {/* Email Address */}
-            <input
-              type="text"
-              placeholder="Email address"
-              className="w-full h-[48px] pl-[12px] pr-[12px] text-black border border-[#637381] rounded-[5px] outline-none text-[15px]"
-              onChange={(e) => setEmail(e.target.value)}
-              value={email}
-            />
+  // Google Logo SVG
+  const googleLogo = (
+    <svg viewBox="0 0 74 24" width="74" height="24" xmlns="http://www.w3.org/2000/svg">
+      <path d="M9.74 10.63V15.3H23.01C22.6 17.51 20.35 22.14 10.02 22.14C3.87 22.14 -1.13 17.06 -1.13 10.91C-1.13 4.76 3.87 -0.32 10.02 -0.32C16.8 -0.32 19.88 4.76 20.61 6.35L15.65 8.7C14.7 6.47 12.87 4.73 10.02 4.73C6.44 4.73 3.99 7.76 3.99 10.91C3.99 14.06 6.44 17.09 10.02 17.09C14.39 17.09 16.65 14.28 17.55 10.63H9.74Z" fill="#4285f4"/>
+      <path d="M33.4 8.08C29.6 8.08 26.35 10.94 26.35 15.01C26.35 19.08 29.6 21.94 33.4 21.94C37.2 21.94 40.45 19.08 40.45 15.01C40.45 10.94 37.2 8.08 33.4 8.08ZM33.4 18.08C31.5 18.08 29.84 16.78 29.84 15.01C29.84 13.24 31.5 11.94 33.4 11.94C35.3 11.94 36.96 13.24 36.96 15.01C36.96 16.78 35.3 18.08 33.4 18.08Z" fill="#ea4335"/>
+      <path d="M49.26 8.08C45.46 8.08 42.21 10.94 42.21 15.01C42.21 19.08 45.46 21.94 49.26 21.94C53.06 21.94 56.31 19.08 56.31 15.01C56.31 10.94 53.06 8.08 49.26 8.08ZM49.26 18.08C47.36 18.08 45.7 16.78 45.7 15.01C45.7 13.24 47.36 11.94 49.26 11.94C51.16 11.94 52.82 13.24 52.82 15.01C52.82 16.78 51.16 18.08 49.26 18.08Z" fill="#fbbc05"/>
+      <path d="M70.18 8.78V9.75C70.18 13.51 67.24 16.89 63.38 16.89C59.54 16.89 56.4 13.82 56.4 9.75C56.4 5.68 59.54 2.61 63.38 2.61C66.52 2.61 68.64 4.54 69.58 6.55L66.52 7.82C65.88 6.32 64.79 5.38 63.38 5.38C61.43 5.38 59.57 6.94 59.57 9.75C59.57 12.56 61.43 14.12 63.38 14.12C65.11 14.12 66.24 12.92 66.86 11.72H63.38V8.78H70.18Z" fill="#4285f4"/>
+      <path d="M73.53 1.07V21.5H76.7V1.07H73.53Z" fill="#34a853"/>
+    </svg>
+  );
 
-            {/* Password */}
+  return (
+    <div className="bg-[#f0f4f9] w-screen min-h-screen flex justify-center items-center font-sans">
+      <div className="bg-white sm:border border-[#dadce0] sm:rounded-[8px] p-6 sm:p-10 w-full sm:w-[450px] min-h-screen sm:min-h-[500px] flex flex-col relative transition-all duration-300">
+        
+        <div className="flex flex-col items-center mb-8 mt-4">
+          {googleLogo}
+          <h1 className="text-[#1f1f1f] text-[24px] font-normal mt-4 mb-1 text-center">
+            {headerTitle}
+          </h1>
+          <p className="text-[#1f1f1f] text-[16px] font-normal text-center">
+            {headerSubtitle}
+          </p>
+        </div>
+
+        <form onSubmit={onSubmit} className="flex flex-col flex-1">
+          <div className="flex flex-col gap-4">
+            
+            <div className="relative">
+              <input
+                type="text"
+                placeholder={t("login.email_placeholder")}
+                className="w-full h-[54px] px-4 text-[#1f1f1f] border border-[#dadce0] rounded-[4px] outline-none text-[16px] focus:border-[#1a73e8] focus:border-2 transition-all placeholder:text-[#5f6368]"
+                onChange={(e) => setEmail(e.target.value)}
+                value={email}
+                disabled={loadingLogin}
+              />
+            </div>
+
             {(mode === "login" || mode === "create") && (
               <div className="relative">
                 <input
                   type="password"
-                  placeholder="Password"
-                  className="w-full h-[48px] pl-[12px] pr-[70px] text-black border border-[#637381] rounded-[5px] outline-none text-[15px] mt-4"
+                  placeholder={t("login.password_placeholder")}
+                  className="w-full h-[54px] px-4 text-[#1f1f1f] border border-[#dadce0] rounded-[4px] outline-none text-[16px] focus:border-[#1a73e8] focus:border-2 transition-all placeholder:text-[#5f6368]"
                   onChange={(e) => setPassword(e.target.value)}
                   value={password}
+                  disabled={loadingLogin}
                 />
-                {mode === "login" && (
-                  <div className="absolute right-0 top-0 bottom-0 flex items-center justify-center">
-                    <a
-                      className="text-[#3c85ee] text-[15px] font-medium no-underline mr-2 mt-4"
-                      onClick={() => setMode("reset")}
-                    >
-                      Forgot?
-                    </a>
-                  </div>
-                )}
               </div>
             )}
 
-            {/* Verify Password */}
             {mode === "create" && (
-              <input
-                type="password"
-                placeholder="Verify Password"
-                className="w-full h-[48px] pl-[12px] pr-[12px] text-black border border-[#637381] rounded-[5px] outline-none text-[15px] mt-4"
-                onChange={(e) => setVerifyPassword(e.target.value)}
-                value={verifyPassword}
-              />
-            )}
-
-            <div className="flex justify-center items-center mt-4">
-              <input
-                type="submit"
-                value={capitalize(mode)}
-                disabled={
-                  isSubmitDisabled || loadingLogin || validationError !== ""
-                }
-                className="bg-[#3c85ee] border border-[#3c85ee] hover:bg-[#326bcc] rounded-[5px] text-white text-[15px] font-medium cursor-pointer py-2 px-4 disabled:opacity-50 disabled:cursor-not-allowed"
-              />
-            </div>
-
-            <div className="mt-4">
-              {mode === "login" && (
-                <p className="text-center text-[#637381] text-[15px] font-normal">
-                  Don't have an account?{" "}
-                  <a
-                    onClick={() => setMode("create")}
-                    className="text-[#3c85ee] text-[15px] font-medium no-underline"
-                  >
-                    Create account
-                  </a>
-                </p>
-              )}
-              {(mode === "create" || mode === "reset") && (
-                <p className="text-center text-[#637381] text-[15px] font-normal">
-                  Back to{" "}
-                  <a
-                    onClick={() => setMode("login")}
-                    className="text-[#3c85ee] text-[15px] font-medium no-underline"
-                  >
-                    Login
-                  </a>
-                </p>
-              )}
-            </div>
-            {(validationError || error) && (
-              <div className="mt-4">
-                <div className="flex justify-center items-center">
-                  <AlertIcon className="w-[20px] text-red-600 mr-2" />
-                  <p className="text-[#637381] text-[15px]">
-                    {validationError || error}
-                  </p>
-                </div>
+              <div className="relative">
+                <input
+                  type="password"
+                  placeholder={t("login.verify_password_placeholder")}
+                  className="w-full h-[54px] px-4 text-[#1f1f1f] border border-[#dadce0] rounded-[4px] outline-none text-[16px] focus:border-[#1a73e8] focus:border-2 transition-all placeholder:text-[#5f6368]"
+                  onChange={(e) => setVerifyPassword(e.target.value)}
+                  value={verifyPassword}
+                  disabled={loadingLogin}
+                />
               </div>
             )}
-          </form>
-        </div>
+          </div>
+
+          {(validationError || error) && (
+            <div className="mt-2 flex items-center">
+              <AlertIcon className="w-4 h-4 text-[#d93025] mr-2 shrink-0" />
+              <p className="text-[#d93025] text-[12px] font-medium m-0">
+                {validationError || error}
+              </p>
+            </div>
+          )}
+
+          {mode === "login" && (
+            <div className="mt-2">
+               <button
+                  type="button"
+                  onClick={() => {
+                    setMode("reset");
+                    setError("");
+                  }}
+                  className="text-[#1a73e8] text-[14px] font-medium bg-transparent hover:bg-[#f8f9fa] rounded px-2 py-1.5 -ml-2 transition-colors outline-none cursor-pointer border-none"
+                >
+                  {t("login.forgot_password")}
+                </button>
+            </div>
+          )}
+
+          <div className="mt-auto pt-10 flex flex-row items-center justify-between">
+            <div>
+               {mode === "login" && (
+                 <button
+                   type="button"
+                   onClick={() => {
+                     setMode("create");
+                     setError("");
+                   }}
+                   className="text-[#1a73e8] text-[14px] font-medium bg-transparent hover:bg-[#f8f9fa] rounded px-2 py-1.5 -ml-2 transition-colors outline-none cursor-pointer border-none"
+                 >
+                   {t("login.create_account")}
+                 </button>
+               )}
+               {(mode === "create" || mode === "reset") && (
+                 <button
+                   type="button"
+                   onClick={() => {
+                     setMode("login");
+                     setError("");
+                   }}
+                   className="text-[#1a73e8] text-[14px] font-medium bg-transparent hover:bg-[#f8f9fa] rounded px-2 py-1.5 -ml-2 transition-colors outline-none cursor-pointer border-none"
+                 >
+                   {t("login.back_to_login")}
+                 </button>
+               )}
+            </div>
+
+            <button
+              type="submit"
+              disabled={isSubmitDisabled || loadingLogin || validationError !== ""}
+              className={classNames(
+                "bg-[#1a73e8] hover:bg-[#1557b0] text-white px-6 py-2 rounded-full text-[14px] font-medium transition-colors outline-none border-none relative flex items-center justify-center min-w-[80px] h-[36px]",
+                {
+                  "opacity-50 cursor-not-allowed": isSubmitDisabled || validationError !== "",
+                  "cursor-pointer": !(isSubmitDisabled || validationError !== "")
+                }
+              )}
+            >
+              {loadingLogin ? (
+                <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin absolute"></div>
+              ) : (
+                <span>
+                  {mode === "login" ? t("login.btn_login") : mode === "create" ? t("login.btn_create") : t("login.btn_reset")}
+                </span>
+              )}
+            </button>
+          </div>
+        </form>
       </div>
       <ToastContainer position="bottom-left" pauseOnFocusLoss={false} />
     </div>

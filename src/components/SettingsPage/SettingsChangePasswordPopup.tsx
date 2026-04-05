@@ -1,9 +1,10 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import CloseIcon from "../../icons/CloseIcon";
 import classNames from "classnames";
 import { toast } from "react-toastify";
 import { changePasswordAPI } from "../../api/userAPI";
 import { AxiosError } from "axios";
+import { useTranslation } from "react-i18next";
 
 interface SettingsChangePasswordPopupProps {
   closePopup: () => void;
@@ -16,6 +17,8 @@ const SettingsChangePasswordPopup: React.FC<
   const [newPassword, setNewPassword] = useState("");
   const [verifyNewPassword, setVerifyNewPassword] = useState("");
   const [loadingChangePassword, setLoadingChangePassword] = useState(false);
+  const [animate, setAnimate] = useState(false);
+  const { t } = useTranslation();
 
   const inputDisabled = (() => {
     if (
@@ -44,9 +47,9 @@ const SettingsChangePasswordPopup: React.FC<
     }
 
     if (newPassword.length < 6) {
-      return "Password must be at least 6 characters";
+      return t("settings.err_length");
     } else if (newPassword.length > 256) {
-      return "Password must be less than 256 characters";
+      return t("settings.err_max_length");
     }
 
     if (
@@ -54,26 +57,35 @@ const SettingsChangePasswordPopup: React.FC<
       verifyNewPassword.length &&
       newPassword !== verifyNewPassword
     ) {
-      return "Passwords do not match";
+      return t("settings.err_match");
     }
 
     return "";
   })();
+
+  useEffect(() => {
+    setAnimate(true);
+  }, []);
+
+  const closeAnimate = () => {
+    setAnimate(false);
+    setTimeout(closePopup, 200);
+  };
 
   const submitPasswordChange = async (e: any) => {
     e.preventDefault();
     setLoadingChangePassword(true);
     try {
       await toast.promise(changePasswordAPI(currentPassword, newPassword), {
-        pending: "Changing password...",
-        success: "Password Changed",
+        pending: t("toast.changing_password"),
+        success: t("toast.password_changed"),
       });
-      closePopup();
+      closeAnimate();
     } catch (e) {
       if (e instanceof AxiosError && e.response?.status === 401) {
-        toast.error("Incorrect password");
+        toast.error(t("toast.incorrect_password"));
       } else {
-        toast.error("Error changing password");
+        toast.error(t("toast.error_changing_password"));
       }
       console.log("Error changing password", e);
     } finally {
@@ -83,67 +95,79 @@ const SettingsChangePasswordPopup: React.FC<
 
   const outterWrapperClick = (e: any) => {
     if (e.target.id !== "outer-wrapper") return;
-    closePopup();
+    closeAnimate();
   };
 
   return (
     <div
       id="outer-wrapper"
-      className="w-screen dynamic-height bg-black bg-opacity-80 absolute top-0 left-0 right-0 bottom-0 z-50 flex justify-center items-center flex-col"
+      className="w-screen dynamic-height bg-black/40 backdrop-blur-sm absolute top-0 left-0 right-0 bottom-0 z-50 flex justify-center items-center flex-col transition-opacity duration-200"
       onClick={outterWrapperClick}
     >
-      <div className="w-[300px] sm:w-[440px] bg-white rounded-md animate">
-        <div className="flex justify-between p-4 border-b border-gray-secondary">
-          <p className="text-md ">Change password</p>
-          <CloseIcon className="w-6 h-6 cursor-pointer" onClick={closePopup} />
+      <div 
+        className={classNames(
+          "w-[90%] sm:w-[440px] bg-white rounded-2xl shadow-2xl flex flex-col overflow-hidden transition-all duration-300 ease-out transform",
+          animate ? "scale-100 opacity-100 translate-y-0" : "scale-95 opacity-0 translate-y-4"
+        )}
+      >
+        <div className="flex items-center justify-between p-4 px-6 border-b border-gray-100">
+          <p className="text-[18px] font-medium text-[#1f1f1f] m-0">{t("settings.change_password_title")}</p>
+          <div 
+            className="p-2 rounded-full hover:bg-black/5 cursor-pointer transition-colors"
+            onClick={closeAnimate}
+          >
+             <CloseIcon className="w-5 h-5 text-[#5f6368]" />
+          </div>
         </div>
-        <form className="mt-2 p-4" onSubmit={submitPasswordChange}>
-          <label>
-            <p className="text-sm text-gray-primary mb-1">Current password</p>
+        
+        <form className="p-6 flex flex-col" onSubmit={submitPasswordChange}>
+          <label className="mb-4">
+            <p className="text-[13px] font-medium text-[#3c4043] mb-1.5">{t("settings.current_password")}</p>
             <input
-              className="border border-[#BEC9D3] rounded-md py-2 px-3 text-black w-full text-sm mb-3"
+              className="border border-[#dadce0] focus:border-[#1a73e8] focus:shadow-[inset_0_0_0_1px_#1a73e8] rounded-md py-2.5 px-3 text-[#3c4043] w-full text-[14px] outline-none transition-shadow bg-transparent"
               type="password"
               value={currentPassword}
               onChange={(e) => setCurrentPassword(e.target.value)}
             />
           </label>
 
-          <label>
-            <p className="text-sm text-gray-primary mb-1">New password</p>
+          <label className="mb-4">
+            <p className="text-[13px] font-medium text-[#3c4043] mb-1.5">{t("settings.new_password")}</p>
             <input
-              className="border border-[#BEC9D3] rounded-md py-2 px-3 text-black w-full mb-3"
+              className="border border-[#dadce0] focus:border-[#1a73e8] focus:shadow-[inset_0_0_0_1px_#1a73e8] rounded-md py-2.5 px-3 text-[#3c4043] w-full text-[14px] outline-none transition-shadow bg-transparent"
               type="password"
               value={newPassword}
               onChange={(e) => setNewPassword(e.target.value)}
             />
           </label>
 
-          <label>
-            <p className="text-sm text-gray-primary mb-1">
-              Verify new password
+          <label className="mb-2">
+            <p className="text-[13px] font-medium text-[#3c4043] mb-1.5">
+              {t("settings.verify_password")}
             </p>
             <input
-              className="border border-[#BEC9D3] rounded-md py-2 px-3 text-black w-full mb-3"
+              className="border border-[#dadce0] focus:border-[#1a73e8] focus:shadow-[inset_0_0_0_1px_#1a73e8] rounded-md py-2.5 px-3 text-[#3c4043] w-full text-[14px] outline-none transition-shadow bg-transparent"
               type="password"
               value={verifyNewPassword}
               onChange={(e) => setVerifyNewPassword(e.target.value)}
             />
           </label>
 
-          {errorMessage && (
-            <div className="p-2">
-              <p className="text-sm text-red-500 text-center">{errorMessage}</p>
-            </div>
-          )}
+          <div className="h-6 flex items-center justify-center">
+            {errorMessage && (
+              <p className="text-[12px] font-medium text-[#d93025] m-0">{errorMessage}</p>
+            )}
+          </div>
 
-          <div className="flex justify-center mt-2">
+          <div className="flex justify-end mt-4">
             <input
               type="submit"
-              value="Submit"
+              value={t("settings.btn_submit")}
               className={classNames(
-                "bg-primary text-white px-4 py-2 rounded-md w-32 cursor-pointer",
+                "bg-[#1a73e8] hover:bg-[#1557b0] text-white px-6 py-2 rounded-full font-medium text-[14px] transition-colors outline-none border-none",
                 {
                   "opacity-50 cursor-not-allowed": inputDisabled,
+                  "cursor-pointer": !inputDisabled
                 }
               )}
               disabled={inputDisabled}

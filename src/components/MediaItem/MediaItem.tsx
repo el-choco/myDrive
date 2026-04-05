@@ -47,7 +47,6 @@ const MediaItem: React.FC<MediaItemType> = memo(({ file }) => {
     file.metadata.thumbnailID
   }`;
 
-  // TODO: See if we can memoize this and remove any
   const mediaItemClick = (e: React.MouseEvent<HTMLDivElement, MouseEvent>) => {
     const multiSelectKey = e.metaKey || e.ctrlKey;
     if (multiSelectMode || multiSelectKey) {
@@ -66,7 +65,6 @@ const MediaItem: React.FC<MediaItemType> = memo(({ file }) => {
     const currentDate = Date.now();
 
     if (!elementSelected) {
-      // dispatch(startSetSelectedItem(file._id, true, true));
       dispatch(
         setMainSelect({ file, id: file._id, type: "file", folder: null })
       );
@@ -85,9 +83,12 @@ const MediaItem: React.FC<MediaItemType> = memo(({ file }) => {
 
   return (
     <div
-      className={classNames("h-[100px] bg-black cursor-pointer relative", {
-        "border-4 border-[#3c85ee]": elementSelected || elementMultiSelected,
-      })}
+      className={classNames(
+        "aspect-square bg-[#f1f3f4] cursor-pointer relative overflow-hidden group transition-all duration-200",
+        {
+          "bg-[#e8f0fe] p-1.5": elementSelected || elementMultiSelected,
+        }
+      )}
       onClick={mediaItemClick}
       onContextMenu={onContextMenu}
       onTouchStart={onTouchStart}
@@ -95,7 +96,7 @@ const MediaItem: React.FC<MediaItemType> = memo(({ file }) => {
       onTouchEnd={onTouchEnd}
     >
       {contextMenuState.selected && (
-        <div onClick={clickStopPropagation}>
+        <div onClick={clickStopPropagation} className="z-50 relative">
           <ContextMenu
             quickItemMode={false}
             contextSelected={contextMenuState}
@@ -104,23 +105,49 @@ const MediaItem: React.FC<MediaItemType> = memo(({ file }) => {
           />
         </div>
       )}
-      {file.metadata.isVideo && !thumbnailError && (
-        <div className="w-full h-full absolute flex justify-center items-center text-white">
-          <PlayButtonIcon className="w-[50px] h-[50px]" />
-        </div>
-      )}
-      {!thumbnailError && (
-        <img
-          className="object-cover h-full w-full disable-force-touch"
-          src={thumbnail}
-          onError={() => setThumbnailError(true)}
-        />
-      )}
-      {thumbnailError && (
-        <div className="w-full h-full flex justify-center items-center">
-          <AlertIcon className="w-7 h-7 text-red-500" />
-        </div>
-      )}
+      
+      <div 
+        className={classNames(
+          "w-full h-full relative overflow-hidden transition-all duration-200",
+          {
+            "rounded-md": elementSelected || elementMultiSelected,
+          }
+        )}
+      >
+        {file.metadata.isVideo && !thumbnailError && (
+          <div className="absolute inset-0 flex justify-center items-center bg-black/10 group-hover:bg-black/20 transition-colors z-10">
+            <PlayButtonIcon className="w-10 h-10 text-white drop-shadow-md" />
+          </div>
+        )}
+        
+        {/* Hover-Overlay for non-selected items */}
+        {!(elementSelected || elementMultiSelected) && !thumbnailError && (
+          <div className="absolute inset-0 bg-black/0 group-hover:bg-black/10 transition-colors z-10 pointer-events-none"></div>
+        )}
+
+        {!thumbnailError && (
+          <img
+            className="object-cover h-full w-full disable-force-touch"
+            src={thumbnail}
+            onError={() => setThumbnailError(true)}
+            alt={file.filename}
+          />
+        )}
+        {thumbnailError && (
+          <div className="w-full h-full flex justify-center items-center bg-[#f8f9fa]">
+            <AlertIcon className="w-6 h-6 text-[#5f6368]" />
+          </div>
+        )}
+        
+        {/* Selection Checkmark */}
+        {(elementSelected || elementMultiSelected) && (
+          <div className="absolute top-2 left-2 bg-[#1a73e8] rounded-full p-0.5 shadow-sm z-20 border-2 border-white">
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="white" className="w-3 h-3">
+              <path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z" />
+            </svg>
+          </div>
+        )}
+      </div>
     </div>
   );
 });

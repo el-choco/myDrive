@@ -1,4 +1,6 @@
 import { toast } from "react-toastify";
+import Swal from "sweetalert2";
+import { useTranslation } from "react-i18next";
 import {
   deleteFileAPI,
   downloadFileAPI,
@@ -6,12 +8,6 @@ import {
   restoreFileAPI,
   trashFileAPI,
 } from "../api/filesAPI";
-import {
-  deleteFilePopup,
-  renameFilePopup,
-  restoreItemPopup,
-  trashItemsPopup,
-} from "../popups/file";
 import { FileInterface } from "../types/file";
 import { FolderInterface } from "../types/folders";
 import { useFiles, useQuickFiles } from "./files";
@@ -23,7 +19,6 @@ import {
   setMultiSelectMode,
   setShareModal,
 } from "../reducers/selected";
-import { deleteFolderPopup, renameFolderPopup } from "../popups/folder";
 import {
   deleteFolderAPI,
   downloadZIPAPI,
@@ -41,6 +36,7 @@ export const useActions = ({ quickItemMode }: UseActionsProps) => {
   const { refetch: refetchFolders } = useFolders(false);
   const { refetch: refetchFolder } = useFolder(false);
   const { refetch: refetchQuickFiles } = useQuickFiles(false);
+  const { t } = useTranslation();
 
   const dispatch = useAppDispatch();
 
@@ -52,36 +48,58 @@ export const useActions = ({ quickItemMode }: UseActionsProps) => {
     dispatch(resetSelected());
   };
 
+  const getSwalOptions = (title: string, isDanger: boolean = false) => ({
+    title,
+    showCancelButton: true,
+    cancelButtonText: t("general.cancel"),
+    buttonsStyling: false,
+    customClass: {
+      popup: 'drive-popup',
+      title: 'drive-title',
+      htmlContainer: 'drive-html',
+      input: 'drive-input',
+      actions: 'drive-actions',
+      cancelButton: 'drive-cancel',
+      confirmButton: isDanger ? 'drive-confirm drive-confirm-danger' : 'drive-confirm'
+    }
+  });
+
   const renameItem = async (
     file?: FileInterface | null,
     folder?: FolderInterface | null
   ) => {
-    if (file) {
-      try {
-        const filename = await renameFilePopup(file.filename);
-        if (!filename || filename === file.filename) return;
-        await toast.promise(renameFileAPI(file._id, filename), {
-          pending: "Renaming...",
-          success: "Renamed",
-          error: "Error Renaming",
-        });
-        reloadItems();
-      } catch (e) {
-        console.log("Error renaming file", e);
+    const defaultName = file ? file.filename : folder ? folder.name : '';
+    
+    const { value: newName } = await Swal.fire({
+      ...getSwalOptions(t("context_menu.rename")),
+      input: 'text',
+      inputPlaceholder: t("general.rename_prompt"),
+      inputValue: defaultName,
+      confirmButtonText: t("settings.btn_okay"),
+      inputValidator: (value) => {
+        if (!value) return 'You need to write something!';
       }
-    } else if (folder) {
-      try {
-        const folderName = await renameFolderPopup(folder.name);
-        if (!folderName || folderName === folder.name) return;
-        await toast.promise(renameFolder(folder._id, folderName), {
-          pending: "Renaming...",
-          success: "Renamed",
-          error: "Error Renaming",
+    });
+
+    if (!newName || newName === defaultName) return;
+
+    try {
+      if (file) {
+        await toast.promise(renameFileAPI(file._id, newName), {
+          pending: t("toast.renaming"),
+          success: t("toast.renamed"),
+          error: t("toast.error_renaming"),
         });
-        reloadItems();
-      } catch (e) {
-        console.log("Error renaming folder", e);
+      } else if (folder) {
+        await toast.promise(renameFolder(folder._id, newName), {
+          pending: t("toast.renaming"),
+          success: t("toast.renamed"),
+          error: t("toast.error_renaming"),
+        });
       }
+      reloadItems();
+    } catch (e) {
+      console.log("Error renaming item", e);
     }
   };
 
@@ -89,42 +107,32 @@ export const useActions = ({ quickItemMode }: UseActionsProps) => {
     file?: FileInterface | null,
     folder?: FolderInterface | null
   ) => {
-    if (file) {
-      try {
-        const result = await trashItemsPopup();
-        if (!result) return;
+    const { isConfirmed } = await Swal.fire({
+      ...getSwalOptions(t("context_menu.trash")),
+      text: t("trash.warning"),
+      icon: "warning",
+      confirmButtonText: t("context_menu.trash"),
+    });
 
+    if (!isConfirmed) return;
+
+    try {
+      if (file) {
         await toast.promise(trashFileAPI(file._id), {
-          pending: "Trashing...",
-          success: "Trashed",
-          error: "Error Trashing",
+          pending: t("toast.trashing"),
+          success: t("toast.trashed"),
+          error: t("toast.error_trashing"),
         });
-        reloadItems();
-      } catch (e) {
-        console.log("Error trashing file", e);
-      }
-    } else if (folder) {
-      try {
-        const result = await trashItemsPopup();
-        if (!result) return;
-
+      } else if (folder) {
         await toast.promise(trashFolderAPI(folder._id), {
-          pending: "Trashing...",
-          success: "Trashed",
-          error: "Error Trashing",
+          pending: t("toast.trashing"),
+          success: t("toast.trashed"),
+          error: t("toast.error_trashing"),
         });
-        reloadItems();
-
-        // if (parentBarMode) {
-        //   if (folder.parent === "/") {
-        //     navigate("/home");
-        //   } else {
-        //     navigate(`/folder/${folder.parent}`);
-        //   }
-        // }
-      } catch (e) {
-        console.log("Error trashing folder", e);
       }
+      reloadItems();
+    } catch (e) {
+      console.log("Error trashing item", e);
     }
   };
 
@@ -132,42 +140,32 @@ export const useActions = ({ quickItemMode }: UseActionsProps) => {
     file?: FileInterface | null,
     folder?: FolderInterface | null
   ) => {
-    if (file) {
-      try {
-        const result = await deleteFilePopup();
-        if (!result) return;
+    const { isConfirmed } = await Swal.fire({
+      ...getSwalOptions(t("context_menu.delete"), true),
+      text: t("trash.delete_warning"),
+      icon: "error",
+      confirmButtonText: t("context_menu.delete"),
+    });
 
+    if (!isConfirmed) return;
+
+    try {
+      if (file) {
         await toast.promise(deleteFileAPI(file._id), {
-          pending: "Deleting...",
-          success: "Deleted",
-          error: "Error Deleting",
+          pending: t("toast.deleting"),
+          success: t("toast.deleted"),
+          error: t("toast.error_deleting"),
         });
-        reloadItems();
-      } catch (e) {
-        console.log("Error deleting file", e);
-      }
-    } else if (folder) {
-      try {
-        const result = await deleteFolderPopup();
-        if (!result) return;
-
+      } else if (folder) {
         await toast.promise(deleteFolderAPI(folder._id), {
-          pending: "Deleting...",
-          success: "Deleted",
-          error: "Error Deleting",
+          pending: t("toast.deleting"),
+          success: t("toast.deleted"),
+          error: t("toast.error_deleting"),
         });
-        reloadItems();
-
-        // if (parentBarMode) {
-        //   if (folder.parent === "/") {
-        //     navigate("/trash");
-        //   } else {
-        //     navigate(`/folder-trash/${folder.parent}`);
-        //   }
-        // }
-      } catch (e) {
-        console.log("Error deleting folder", e);
       }
+      reloadItems();
+    } catch (e) {
+      console.log("Error deleting item", e);
     }
   };
 
@@ -175,30 +173,23 @@ export const useActions = ({ quickItemMode }: UseActionsProps) => {
     file?: FileInterface | null,
     folder?: FolderInterface | null
   ) => {
-    const result = await restoreItemPopup();
-    if (!result) return;
-    if (file) {
-      try {
+    try {
+      if (file) {
         await toast.promise(restoreFileAPI(file._id), {
-          pending: "Restoring...",
-          success: "Restored",
-          error: "Error Restoring",
+          pending: t("toast.restoring"),
+          success: t("toast.restored"),
+          error: t("toast.error_restoring"),
         });
-        reloadItems();
-      } catch (e) {
-        console.log("Error restoring file", e);
-      }
-    } else if (folder) {
-      try {
+      } else if (folder) {
         await toast.promise(restoreFolderAPI(folder._id), {
-          pending: "Restoring...",
-          success: "Restored",
-          error: "Error Restoring",
+          pending: t("toast.restoring"),
+          success: t("toast.restored"),
+          error: t("toast.error_restoring"),
         });
-        reloadItems();
-      } catch (e) {
-        console.log("Error restoring folder", e);
       }
+      reloadItems();
+    } catch (e) {
+      console.log("Error restoring item", e);
     }
   };
 

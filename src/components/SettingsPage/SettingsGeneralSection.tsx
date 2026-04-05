@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { usePreferenceSetter } from "../../hooks/preferenceSetter";
+import { useTranslation } from "react-i18next";
 
 const SettingsPageGeneral = () => {
   const [listViewStyle, setListViewStyle] = useState("list");
@@ -8,6 +9,7 @@ const SettingsPageGeneral = () => {
   const [singleClickFolders, setSingleClickFolders] = useState("disabled");
   const [loadThumbnails, setLoadThumbnails] = useState("enabled");
   const { setPreferences } = usePreferenceSetter();
+  const { t } = useTranslation();
 
   const fileListStyleChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
     const value = e.target.value;
@@ -97,64 +99,69 @@ const SettingsPageGeneral = () => {
   }, []);
 
   return (
-    <div>
-      <div className="bg-white-hover p-3 flex items-center w-full rounded-md">
-        <p className="text-base">General settings</p>
-      </div>
-      <div>
-        <div className="px-3 py-4 flex flex-row justify-between items-center border-b border-gray-secondary">
-          <p className="text-gray-primary">File list style</p>
+    <div className="animate-fade-in">
+      <h3 className="text-[18px] font-medium text-[#1f1f1f] mb-4 m-0">
+        {t("settings.general_title")}
+      </h3>
+      
+      <div className="border border-gray-200 rounded-2xl overflow-hidden bg-white">
+        <div className="px-6 py-4 flex flex-row justify-between items-center border-b border-gray-100 hover:bg-[#f8f9fa] transition-colors">
+          <p className="text-[#3c4043] font-medium text-[14px] m-0">{t("settings.file_list_style")}</p>
           <select
             value={listViewStyle}
             onChange={fileListStyleChange}
-            className="text-sm font-medium appearance-none bg-white text-primary"
+            className="text-[14px] bg-[#f1f3f4] text-[#3c4043] rounded-md px-3 py-1.5 outline-none border-none cursor-pointer"
           >
-            <option value="grid">Grid</option>
-            <option value="list">List</option>
+            <option value="grid">{t("settings.grid")}</option>
+            <option value="list">{t("settings.list")}</option>
           </select>
         </div>
-        <div className="px-3 py-4 flex flex-row justify-between items-center border-b border-gray-secondary">
-          <p className="text-gray-primary">Sort by</p>
+        
+        <div className="px-6 py-4 flex flex-row justify-between items-center border-b border-gray-100 hover:bg-[#f8f9fa] transition-colors">
+          <p className="text-[#3c4043] font-medium text-[14px] m-0">{t("settings.sort_by")}</p>
           <select
             value={sortBy}
             onChange={sortByChange}
-            className="text-sm font-medium appearance-none bg-white text-primary"
+            className="text-[14px] bg-[#f1f3f4] text-[#3c4043] rounded-md px-3 py-1.5 outline-none border-none cursor-pointer"
           >
-            <option value="date">Date</option>
-            <option value="name">Name</option>
+            <option value="date">{t("settings.date")}</option>
+            <option value="name">{t("settings.name")}</option>
           </select>
         </div>
-        <div className="px-3 py-4 flex flex-row justify-between items-center border-b border-gray-secondary">
-          <p className="text-gray-primary">Order by</p>
+        
+        <div className="px-6 py-4 flex flex-row justify-between items-center border-b border-gray-100 hover:bg-[#f8f9fa] transition-colors">
+          <p className="text-[#3c4043] font-medium text-[14px] m-0">{t("settings.order_by")}</p>
           <select
             value={orderBy}
             onChange={orderByChange}
-            className="text-sm font-medium appearance-none bg-white text-primary"
+            className="text-[14px] bg-[#f1f3f4] text-[#3c4043] rounded-md px-3 py-1.5 outline-none border-none cursor-pointer"
           >
-            <option value="descending">Descending</option>
-            <option value="ascending">Ascending</option>
+            <option value="descending">{t("settings.descending")}</option>
+            <option value="ascending">{t("settings.ascending")}</option>
           </select>
         </div>
-        <div className="px-3 py-4 flex flex-row justify-between items-center border-b border-gray-secondary">
-          <p className="text-gray-primary">Single click to enter folders</p>
+        
+        <div className="px-6 py-4 flex flex-row justify-between items-center border-b border-gray-100 hover:bg-[#f8f9fa] transition-colors">
+          <p className="text-[#3c4043] font-medium text-[14px] m-0">{t("settings.single_click")}</p>
           <select
             value={singleClickFolders}
             onChange={singleClickFoldersChange}
-            className="text-sm font-medium appearance-none bg-white text-primary"
+            className="text-[14px] bg-[#f1f3f4] text-[#3c4043] rounded-md px-3 py-1.5 outline-none border-none cursor-pointer"
           >
-            <option value="disabled">Disabled</option>
-            <option value="enabled">Enabled</option>
+            <option value="disabled">{t("settings.disabled")}</option>
+            <option value="enabled">{t("settings.enabled")}</option>
           </select>
         </div>
-        <div className="px-3 py-4 flex flex-row justify-between items-center border-b border-gray-secondary">
-          <p className="text-gray-primary">Load thumbnails</p>
+        
+        <div className="px-6 py-4 flex flex-row justify-between items-center hover:bg-[#f8f9fa] transition-colors">
+          <p className="text-[#3c4043] font-medium text-[14px] m-0">{t("settings.load_thumbnails")}</p>
           <select
             value={loadThumbnails}
             onChange={loadThumbnailsChange}
-            className="text-sm font-medium appearance-none bg-white text-primary"
+            className="text-[14px] bg-[#f1f3f4] text-[#3c4043] rounded-md px-3 py-1.5 outline-none border-none cursor-pointer"
           >
-            <option value="enabled">Enabled</option>
-            <option value="disabled">Disabled</option>
+            <option value="enabled">{t("settings.enabled")}</option>
+            <option value="disabled">{t("settings.disabled")}</option>
           </select>
         </div>
       </div>

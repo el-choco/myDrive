@@ -11,6 +11,7 @@ import sendPasswordResetEmail from "../../utils/sendPasswordResetEmail";
 import ForbiddenError from "../../utils/ForbiddenError";
 import ConflictError from "../../utils/ConflictError";
 import NotAuthorizedError from "../../utils/NotAuthorizedError";
+import mongoose from "mongoose";
 
 type UserDataType = {
   email: string;
@@ -162,6 +163,34 @@ class UserService {
     if (!user) throw new NotFoundError("Cannot find user");
 
     return user;
+  };
+
+  // --- HIER IST DIE MAGIE: Kugelsichere Abfrage & Live-Umgebungsvariablen ---
+  getStorageInfo = async (userID: string) => {
+    let objectId;
+    try {
+      objectId = new mongoose.Types.ObjectId(userID);
+    } catch (e) {
+      objectId = null;
+    }
+
+    const matchConditions: any[] = [{ "metadata.owner": userID.toString() }];
+    if (objectId) {
+      matchConditions.push({ "metadata.owner": objectId });
+    }
+
+    const storageAggregation = await File.aggregate([
+      { $match: { $or: matchConditions } },
+      { $group: { _id: null, totalSize: { $sum: "$length" } } },
+    ]);
+    
+    const storageUsed = storageAggregation.length > 0 ? storageAggregation[0].totalSize : 0;
+    
+    // Wir lesen die Limit-Variable LIVE aus, um das Timing-Problem beim Serverstart zu umgehen
+    const limitGb = process.env.STORAGE_LIMIT_GB ? Number(process.env.STORAGE_LIMIT_GB) : 50;
+    const storageLimit = limitGb * 1024 * 1024 * 1024;
+    
+    return { storageUsed, storageLimit };
   };
 
   verifyEmail = async (verifyToken: any) => {

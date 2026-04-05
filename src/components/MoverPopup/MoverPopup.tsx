@@ -14,6 +14,7 @@ import { toast } from "react-toastify";
 import { moveFileAPI, moveMultiAPI } from "../../api/filesAPI";
 import { useFiles } from "../../hooks/files";
 import { moveFolderAPI } from "../../api/foldersAPI";
+import { useTranslation } from "react-i18next";
 
 const MoverPopup = () => {
   const [search, setSearch] = useState("");
@@ -36,18 +37,27 @@ const MoverPopup = () => {
   const dispatch = useAppDispatch();
   const { refetch: refetchFiles } = useFiles(false);
   const { refetch: refetchFolders } = useFolders(false);
+  const { t } = useTranslation();
   const lastSelected = useRef({
     timestamp: 0,
     folderID: "",
   });
 
-  const foldersToMove = useAppSelector((state) => {
-    if (state.selected.multiSelectMode) {
-      return Object.keys(state.selected.multiSelectMap);
-    } else {
-      return [state.selected.mainSection.id];
+  // HIER IST DER FIX: Wir senden nur echte Ordner-IDs an das Backend!
+  const foldersToMove = useMemo(() => {
+    if (multiSelectMode) {
+      const folderIds: string[] = [];
+      Object.values(multiSelectMap).forEach((item) => {
+        if (item.type === "folder") {
+          folderIds.push(item.id);
+        }
+      });
+      return folderIds;
+    } else if (folder) {
+      return [folder._id];
     }
-  });
+    return []; // Dateien haben keine Unterordner, wir müssen nichts ausblenden!
+  }, [multiSelectMode, multiSelectMap, folder]);
 
   const { data: folderList, isLoading: isLoadingFolders } = useMoveFolders(
     parent?._id || "/",
@@ -67,24 +77,24 @@ const MoverPopup = () => {
     };
   }, [search, debouncedSetSearchText]);
 
-  const onFolderClick = (folder: FolderInterface) => {
+  const onFolderClick = (folderClickItem: FolderInterface) => {
     const currentDate = Date.now();
 
     if (
-      lastSelected.current.folderID === folder._id &&
+      lastSelected.current.folderID === folderClickItem._id &&
       currentDate - lastSelected.current.timestamp < 1500
     ) {
       setSearch("");
       setDebouncedSearch("");
-      setParentList([...parentList, folder]);
-      setParent(folder);
+      setParentList([...parentList, folderClickItem]);
+      setParent(folderClickItem);
       setSelectedFolder(null);
     } else {
-      setSelectedFolder(folder);
+      setSelectedFolder(folderClickItem);
     }
 
     lastSelected.current.timestamp = Date.now();
-    lastSelected.current.folderID = folder._id;
+    lastSelected.current.folderID = folderClickItem._id;
   };
 
   const onBackClick = () => {
@@ -103,12 +113,12 @@ const MoverPopup = () => {
 
   const moveText = (() => {
     if (selectedFolder?._id && selectedFolder?.name) {
-      return `Move to ${selectedFolder.name}`;
+      return t("mover_popup.move_to_name", { name: selectedFolder.name });
     } else if (!parent) {
-      return "Move to home";
+      return t("mover_popup.move_to_home");
     } else {
       const lastParent = parentList[parentList.length - 1];
-      return `Move to ${lastParent.name}`;
+      return t("mover_popup.move_to_name", { name: lastParent.name });
     }
   })();
 
@@ -116,7 +126,7 @@ const MoverPopup = () => {
     if (parent) {
       return parent.name;
     } else {
-      return "Home";
+      return t("mover_popup.home");
     }
   })();
 
@@ -141,31 +151,30 @@ const MoverPopup = () => {
       if (multiSelectMode) {
         const itemsToMove = Object.values(multiSelectMap);
         await toast.promise(moveMultiAPI(itemsToMove, moveTo), {
-          pending: "Moving items...",
-          success: "Items Moved",
-          error: "Error Moving Items",
+          pending: t("toast.moving_items"),
+          success: t("toast.items_moved"),
+          error: t("toast.error_moving_items"),
         });
         refetchFiles();
         refetchFolders();
         dispatch(resetMoveModal());
       } else if (file) {
         await toast.promise(moveFileAPI(file._id, moveTo), {
-          pending: "Moving File...",
-          success: "File Moved",
-          error: "Error Moving File",
+          pending: t("toast.moving_file"),
+          success: t("toast.file_moved"),
+          error: t("toast.error_moving_file"),
         });
         refetchFiles();
         dispatch(resetMoveModal());
       } else if (folder) {
         await toast.promise(moveFolderAPI(folder._id, moveTo), {
-          pending: "Moving Folder...",
-          success: "Folder Moved",
-          error: "Error Moving Folder",
+          pending: t("toast.moving_folder"),
+          success: t("toast.folder_moved"),
+          error: t("toast.error_moving_folder"),
         });
         refetchFolders();
         dispatch(resetMoveModal());
       }
-      console.log("move to", moveTo);
     } catch (e) {
       console.log("move error", e);
     } finally {
@@ -188,109 +197,122 @@ const MoverPopup = () => {
     closeModal();
   };
 
+  const showLoading = isLoadingFolders;
+  const noFolders = !isLoadingFolders && (!folderList || folderList.length === 0);
+
   return (
     <div
-      className="w-screen dynamic-height bg-black bg-opacity-80 absolute top-0 left-0 right-0 bottom-0 z-50 flex justify-center items-center flex-col"
+      className="w-screen dynamic-height bg-black/40 backdrop-blur-sm absolute top-0 left-0 right-0 bottom-0 z-[60] flex justify-center items-center flex-col transition-opacity duration-200"
       id="outer-wrapper"
       onClick={wrapperClick}
     >
-      <div className="absolute top-[20px] flex justify-end w-full">
-        <div>
-          <CloseIcon
-            className="w-6 h-6 cursor-pointer text-white mr-4"
-            onClick={closeModal}
-          />
-        </div>
-      </div>
       <div
-        className="bg-white w-full max-w-[500px] p-4 rounded-md animate-easy"
-        style={{ marginTop: !animate ? "calc(100vh + 480px" : 0 }}
+        className={classNames(
+          "bg-white w-full max-w-[440px] rounded-2xl shadow-2xl flex flex-col overflow-hidden transition-all duration-300 ease-out transform",
+          animate ? "scale-100 opacity-100 translate-y-0" : "scale-95 opacity-0 translate-y-4"
+        )}
       >
-        <div
-          className={classNames("flex flex-row items-center", {
-            "justify-between": multiSelectMode,
-          })}
-        >
-          <ArrowBackIcon
-            className={classNames("w-7 h-7 cursor-pointer mr-2", {
-              "opacity-50": !parent,
-            })}
-            onClick={onBackClick}
-          />
-          {!multiSelectMode && (
+        <div className="flex items-center justify-between p-4 border-b border-gray-100">
+          <div className="flex items-center">
+            <div 
+              className={classNames(
+                "p-2 rounded-full transition-colors mr-1",
+                parent ? "hover:bg-black/5 cursor-pointer" : "opacity-30 cursor-not-allowed"
+              )}
+              onClick={onBackClick}
+            >
+              <ArrowBackIcon className="w-5 h-5 text-[#5f6368]" />
+            </div>
+            <p
+              className="text-[#1f1f1f] text-[18px] font-medium max-w-[200px] truncate select-none cursor-pointer hover:bg-black/5 px-2 py-1 rounded-md transition-colors m-0"
+              onClick={onTitleClick}
+            >
+              {headerText}
+            </p>
+          </div>
+          <div className="flex items-center gap-1">
+            <div 
+              className="p-2 rounded-full hover:bg-black/5 cursor-pointer transition-colors"
+              onClick={onHomeClick}
+              title={t("mover_popup.home")}
+            >
+              <HomeIconOutline className="w-5 h-5 text-[#5f6368]" />
+            </div>
+            <div 
+              className="p-2 rounded-full hover:bg-black/5 cursor-pointer transition-colors"
+              onClick={closeModal}
+            >
+              <CloseIcon className="w-5 h-5 text-[#5f6368]" />
+            </div>
+          </div>
+        </div>
+
+        {!multiSelectMode && (
+          <div className="px-4 pt-4">
             <input
-              className="w-full py-2 px-3 text-black border border-gray-primary rounded-md text-sm outline-none"
-              placeholder="Search"
+              className="w-full h-10 px-4 bg-[#f1f3f4] text-[#3c4043] rounded-full text-[14px] outline-none placeholder:text-[#5f6368] focus:bg-white focus:shadow-[0_1px_1px_0_rgba(65,69,73,0.3),0_1px_3px_1px_rgba(65,69,73,0.15)] transition-all"
+              placeholder={t("mover_popup.search_placeholder")}
               value={search}
               onChange={(e) => setSearch(e.target.value)}
             />
+          </div>
+        )}
+
+        <div className="flex flex-col overflow-y-auto h-[260px] p-2 mt-2">
+          {noFolders && (
+             <div className="flex items-center justify-center h-full text-[#5f6368] text-[14px]">
+               {t("mover_popup.no_folders")}
+             </div>
           )}
-          <HomeIconOutline
-            className="w-7 h-7 cursor-pointer ml-2"
-            onClick={onHomeClick}
-          />
-        </div>
-        <div>
-          <p
-            className="text-lg mt-2 mb-2 max-w-[75%] text-ellipsis overflow-hidden select-none cursor-pointer"
-            onClick={onTitleClick}
-          >
-            {headerText}
-          </p>
-        </div>
-        <div className="flex flex-col overflow-y-scroll h-[230px]">
-          {!isLoadingFolders && (
+          {!noFolders && !showLoading && (
             <React.Fragment>
-              {folderList?.map((folder: FolderInterface) => (
+              {folderList?.map((folderItem: FolderInterface) => (
                 <div
                   className={classNames(
-                    "p-2 border-b border-[#ebe9f9] rounded-md flex flex-row items-center",
+                    "px-4 py-3 rounded-xl flex flex-row items-center cursor-pointer transition-colors mb-1",
                     {
-                      "bg-primary text-white hover:bg-primary-hover":
-                        selectedFolder?._id === folder._id,
-                      "hover:bg-white-hover":
-                        selectedFolder?._id !== folder._id,
+                      "bg-[#c2e7ff] text-[#001d35]": selectedFolder?._id === folderItem._id,
+                      "hover:bg-[#f1f3f4] text-[#3c4043]": selectedFolder?._id !== folderItem._id,
                     }
                   )}
-                  key={folder._id}
-                  onClick={() => onFolderClick(folder)}
+                  key={folderItem._id}
+                  onClick={() => onFolderClick(folderItem)}
                 >
                   <FolderIcon
-                    className={classNames("w-5 h-5 mr-2 select-none", {
-                      "text-white": selectedFolder?._id === folder._id,
-                      "text-primary": selectedFolder?._id !== folder._id,
+                    className={classNames("w-5 h-5 mr-3 select-none", {
+                      "text-[#001d35]": selectedFolder?._id === folderItem._id,
+                      "text-[#5f6368]": selectedFolder?._id !== folderItem._id,
                     })}
                   />
-                  <p className="max-w-[75%] text-ellipsis overflow-hidden select-none">
-                    {folder.name}
+                  <p className="max-w-[85%] truncate select-none text-[14px] font-medium m-0">
+                    {folderItem.name}
                   </p>
                 </div>
               ))}
             </React.Fragment>
           )}
-          {isLoadingFolders && (
+          {showLoading && (
             <div className="flex justify-center items-center h-full">
               <Spinner />
             </div>
           )}
         </div>
-        <div className="mt-4 border border-gray-secondary rounded-md p-4">
-          <p className="text-sm overflow-hidden text-ellipsis whitespace-nowrap select-none">
+
+        <div className="p-4 border-t border-gray-100 bg-[#f8f9fa] flex items-center justify-between rounded-b-2xl">
+           <p className="text-[13px] text-[#5f6368] truncate pr-4 m-0 flex-1 select-none">
             {moveText}
           </p>
-        </div>
-        <div className="flex justify-end mt-4">
           <button
             className={classNames(
-              "bg-primary hover:bg-primary-hover text-white px-4 py-2 rounded-md",
+              "bg-[#1a73e8] hover:bg-[#1557b0] text-white px-6 py-2 rounded-full text-[14px] font-medium transition-colors shrink-0 outline-none",
               {
-                "opacity-50": isLoadingMove,
+                "opacity-50 cursor-not-allowed": isLoadingMove,
               }
             )}
             onClick={onMoveClick}
             disabled={isLoadingMove}
           >
-            Confirm
+            {t("mover_popup.confirm")}
           </button>
         </div>
       </div>

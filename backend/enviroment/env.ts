@@ -34,6 +34,9 @@ export default {
   httpsKeyPath: process.env.HTTPS_KEY_PATH,
   httpsCaPath: process.env.HTTPS_CA_PATH,
   httpsCrtPath: process.env.HTTPS_CRT_PATH,
+  storageLimit: process.env.STORAGE_LIMIT_GB
+    ? Number(process.env.STORAGE_LIMIT_GB) * 1024 * 1024 * 1024
+    : 53687091200,
 };
 
 module.exports = {
@@ -72,4 +75,7 @@ module.exports = {
   httpsKeyPath: process.env.HTTPS_KEY_PATH,
   httpsCaPath: process.env.HTTPS_CA_PATH,
   httpsCrtPath: process.env.HTTPS_CRT_PATH,
+  storageLimit: process.env.STORAGE_LIMIT_GB
+    ? Number(process.env.STORAGE_LIMIT_GB) * 1024 * 1024 * 1024
+    : 53687091200,
 };

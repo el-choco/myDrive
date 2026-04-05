@@ -15,6 +15,8 @@ interface QueryKeyParams {
   trashMode?: boolean;
   mediaMode?: boolean;
   mediaFilter?: string;
+  typeFilter?: string; // <--- NEU
+  dateFilter?: string; // <--- NEU
 }
 
 // GET
@@ -33,6 +35,8 @@ export const getFilesListAPI = async ({
       trashMode,
       mediaMode,
       mediaFilter,
+      typeFilter, // <--- NEU
+      dateFilter, // <--- NEU
     },
   ] = queryKey;
 
@@ -44,6 +48,8 @@ export const getFilesListAPI = async ({
     trashMode,
     mediaMode,
     mediaFilter,
+    typeFilter, // <--- NEU
+    dateFilter, // <--- NEU
   };
 
   if (pageParam?.startAtDate && pageParam?.startAtName) {

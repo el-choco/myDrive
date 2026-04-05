@@ -1,8 +1,9 @@
-import express, { Request, Response } from "express";
+import express, { Request, Response, NextFunction } from "express";
 import path from "path";
 import userRouter from "../express-routers/user-router";
 import fileRouter from "../express-routers/file-router";
 import folderRouter from "../express-routers/folder-router";
+import adminRouter from "../express-routers/admin-router"; // <-- NEU: Admin-Router importiert
 import bodyParser from "body-parser";
 import https from "https";
 import fs from "fs";
@@ -14,10 +15,55 @@ import cookieParser from "cookie-parser";
 import env from "../enviroment/env";
 import { middlewareErrorHandler } from "../middleware/utils/middleware-utils";
 import cors from "cors";
-// import requestIp from "request-ip";
+
+import { v2 as webdav } from "webdav-server";
+import { MongoWebDAVAuth } from "../services/webdav/MongoWebDAVAuth";
+import { MongoFileSystem } from "../services/webdav/MongoFileSystem";
+
+// --- GLOBALE FEHLERFÄNGER (verhindern stille Abstürze) ---
+process.on("uncaughtException", (err) => {
+  console.error("[CRITICAL] Uncaught Exception:", err);
+});
+process.on("unhandledRejection", (reason, promise) => {
+  console.error("[CRITICAL] Unhandled Rejection at:", promise, "reason:", reason);
+});
 
 const app = express();
 const publicPath = path.join(__dirname, "..", "..", "dist-frontend");
+
+// --- TOTALER REQUEST-LOGGER (Das Radar für Portainer) ---
+app.use((req: Request, res: Response, next: NextFunction) => {
+  const method = req.method;
+  const url = req.originalUrl || req.url;
+  
+  if (url.includes("/webdav") || url.includes("/file-service")) {
+    console.log(`[INCOMING] ${method} ${url}`);
+    
+    res.on("finish", () => {
+      if (res.statusCode >= 400) {
+        console.error(`[ERROR] ${method} ${url} -> Status: ${res.statusCode}`);
+      } else {
+        console.log(`[OK] ${method} ${url} -> Status: ${res.statusCode}`);
+      }
+    });
+  }
+  next();
+});
+
+// --- WEBDAV SERVER ---
+const webdavServer = new webdav.WebDAVServer({
+  httpAuthentication: new MongoWebDAVAuth(),
+  requireAuthentification: true // Ja, das schreibt die Library mit 'f' :D
+});
+
+// Wir mounten unseren MongoDB Übersetzer im Root-Verzeichnis (/)
+webdavServer.setFileSystem('/', new MongoFileSystem(), (success?: boolean) => {
+  console.log("WebDAV FileSystem mounted:", success);
+});
+
+// Verbindet den WebDAV Server mit Express
+app.use(webdav.extensions.express('/webdav', webdavServer));
+// ----------------------
 
 let server: any;
 let serverHttps: any;
@@ -57,7 +103,6 @@ app.use(
     parameterLimit: 50000,
   })
 );
-// app.use(requestIp.mw());
 
 app.use(
   busboy({
@@ -65,13 +110,10 @@ app.use(
   })
 );
 
-app.use(userRouter, fileRouter, folderRouter);
+// <-- NEU: adminRouter hier am Ende hinzugefügt
+app.use(userRouter, fileRouter, folderRouter, adminRouter); 
 
 app.use(middlewareErrorHandler);
-
-//const nodeMode = process.env.NODE_ENV ? "Production" : "Development/Testing";
-
-//console.log("Node Enviroment Mode:", nodeMode);
 
 if (process.env.NODE_ENV === "production") {
   app.get("*", (_: Request, res: Response) => {

@@ -12,7 +12,10 @@ import { useAppSelector } from "./store";
 export const useFolders = (enabled = true) => {
   const params = useParams();
   const sortBy = useAppSelector((state) => state.filter.sortBy);
+  const typeFilter = useAppSelector((state) => state.filter.typeFilter);
+  const dateFilter = useAppSelector((state) => state.filter.dateFilter);
   const { isTrash } = useUtils();
+  
   const foldersReactQuery: UseQueryResult<FolderInterface[]> = useQuery(
     [
       "folders",
@@ -22,6 +25,8 @@ export const useFolders = (enabled = true) => {
         sortBy,
         limit: undefined,
         trashMode: isTrash,
+        typeFilter,
+        dateFilter,
       },
     ],
     getFoldersListAPI,

@@ -79,7 +79,6 @@ const QuickAccessItem = memo((props: QuickAccessItemProps) => {
     const currentDate = Date.now();
 
     if (!elementSelected) {
-      // dispatch(startSetSelectedItem(file._id, true, true));
       dispatch(
         setMainSelect({ file, id: file._id, type: "quick-item", folder: null })
       );
@@ -99,7 +98,7 @@ const QuickAccessItem = memo((props: QuickAccessItemProps) => {
   return (
     <div
       className={classNames(
-        "border rounded-md o transition-all duration-400 ease-in-out cursor-pointer flex items-center justify-center flex-col h-[150px] animiate hover:border-[#3c85ee] overflow-hidden bg-white",
+        "border rounded-md transition-all duration-400 ease-in-out cursor-pointer flex items-center justify-center flex-col h-[150px] hover:border-[#3c85ee] overflow-hidden bg-white",
         elementSelected || elementMultiSelected
           ? "border-[#3c85ee]"
           : "border-gray-third"
@@ -173,7 +172,7 @@ const QuickAccessItem = memo((props: QuickAccessItemProps) => {
       </div>
       <div
         className={classNames(
-          "p-3 overflow-hidden text-ellipsis block w-full animate",
+          "p-3 overflow-hidden text-ellipsis block w-full transition-colors",
           elementSelected || elementMultiSelected
             ? "bg-[#3c85ee] text-white"
             : "bg-white text-[#637381]"
@@ -181,7 +180,7 @@ const QuickAccessItem = memo((props: QuickAccessItemProps) => {
       >
         <p
           className={classNames(
-            "text-[14px] leading-[16px] font-normal max-w-full overflow-hidden text-ellipsis whitespace-nowrap animate mb-0",
+            "text-[14px] leading-[16px] font-normal max-w-full overflow-hidden text-ellipsis whitespace-nowrap mb-0 transition-colors",
             elementSelected || elementMultiSelected
               ? "text-white"
               : "text-[#212b36]"
@@ -193,10 +192,10 @@ const QuickAccessItem = memo((props: QuickAccessItemProps) => {
           <ClockIcon className="h-4 w-4 mr-1" />
           <p
             className={classNames(
-              "m-0 font-normal max-w-full whitespace-nowrap text-xs animate",
+              "m-0 font-normal max-w-full whitespace-nowrap text-xs transition-colors",
               elementSelected || elementMultiSelected
                 ? "text-white"
-                : "text-gray-primary]"
+                : "text-gray-500"
             )}
           >
             {formattedDate}

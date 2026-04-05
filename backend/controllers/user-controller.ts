@@ -35,9 +35,12 @@ class UserController {
 
   getUser = async (req: RequestType, res: Response, next: NextFunction) => {
     try {
-      const user = req.user!;
-
-      res.send(user);
+      const user: any = req.user!;
+      const storageInfo = await UserProvider.getStorageInfo(user._id.toString());
+      
+      const userData = typeof user.toJSON === "function" ? user.toJSON() : user;
+      
+      res.send({ ...userData, ...storageInfo });
     } catch (e) {
       next(e);
     }
@@ -46,7 +49,6 @@ class UserController {
   login = async (req: RequestType, res: Response, next: NextFunction) => {
     try {
       const body = req.body;
-
       const currentUUID = req.headers.uuid as string;
 
       const { user, accessToken, refreshToken } = await UserProvider.login(
@@ -54,9 +56,12 @@ class UserController {
         currentUUID
       );
 
+      const storageInfo = await UserProvider.getStorageInfo(user._id.toString());
+
       createLoginCookie(res, accessToken, refreshToken);
 
-      res.status(200).send({ user });
+      const userData = typeof user.toJSON === "function" ? user.toJSON() : user;
+      res.status(200).send({ user: { ...userData, ...storageInfo } });
     } catch (e) {
       next(e);
     }
@@ -133,9 +138,12 @@ class UserController {
       const { user, accessToken, refreshToken, emailSent } =
         await UserProvider.create(req.body, currentUUID);
 
+      const storageInfo = await UserProvider.getStorageInfo(user._id.toString());
+
       createLoginCookie(res, accessToken, refreshToken);
 
-      res.status(201).send({ user, emailSent });
+      const userData = typeof user.toJSON === "function" ? user.toJSON() : user;
+      res.status(201).send({ user: { ...userData, ...storageInfo }, emailSent });
     } catch (e) {
       next(e);
     }
@@ -187,8 +195,10 @@ class UserController {
       const userID = req.user._id;
 
       const userDetailed = await UserProvider.getUserDetailed(userID);
+      const storageInfo = await UserProvider.getStorageInfo(userID.toString());
 
-      res.send(userDetailed);
+      const userData = typeof userDetailed.toJSON === "function" ? userDetailed.toJSON() : userDetailed;
+      res.send({ ...userData, ...storageInfo });
     } catch (e) {
       next(e);
     }

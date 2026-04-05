@@ -27,6 +27,7 @@ const MainSection = memo(() => {
   const isFileInfoSelected = !isMediaSelected && popupModalItem;
 
   const { isMedia } = useUtils();
+
   return (
     <div>
       <div className="flex h-full">
@@ -40,14 +41,16 @@ const MainSection = memo(() => {
 
         {moveModalItemType && <MoverPopup />}
 
-        <div className="flex flex-row dynamic-height w-screen pt-12">
+        <div className="flex flex-row h-screen w-screen pt-[64px] bg-[#f8f9fa] overflow-hidden">
           <LeftSection scrollDivRef={scrollDivRef} />
 
-          {!isMedia ? (
-            <DataForm scrollDivRef={scrollDivRef} />
-          ) : (
-            <Medias scrollDivRef={scrollDivRef} />
-          )}
+          <main className="flex-1 bg-white rounded-2xl mr-4 mb-4 flex flex-col relative overflow-hidden shadow-sm border border-gray-200">
+            {!isMedia ? (
+              <DataForm scrollDivRef={scrollDivRef} />
+            ) : (
+              <Medias scrollDivRef={scrollDivRef} />
+            )}
+          </main>
 
           <RightSection />
         </div>

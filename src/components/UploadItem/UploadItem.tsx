@@ -5,6 +5,7 @@ import CloseIcon from "../../icons/CloseIcon";
 import CheckCircleIcon from "../../icons/CheckCircleIcon";
 import AlertIcon from "../../icons/AlertIcon";
 import { UploadItemType } from "../../reducers/uploader";
+import classNames from "classnames";
 
 const UploadItem: React.FC<UploadItemType> = (props) => {
   const { completed, canceled, progress, name, id, type } = props;
@@ -16,49 +17,58 @@ const UploadItem: React.FC<UploadItemType> = (props) => {
 
   const ProgressIcon = memo(() => {
     if (completed) {
-      return <CheckCircleIcon className="w-[20px] h-[20px] text-green-600" />;
+      return <CheckCircleIcon className="w-5 h-5 text-[#188038]" />;
     } else if (canceled) {
-      return <AlertIcon className="w-[20px] h-[20px] text-red-600" />;
+      return <AlertIcon className="w-5 h-5 text-[#d93025]" />;
     } else {
       return (
-        <CloseIcon
-          className="w-[20px] h-[20px] cursor-pointer"
+        <div 
+          className="p-1.5 rounded-full hover:bg-black/5 cursor-pointer transition-colors"
           onClick={cancelUpload}
-        />
+        >
+          <CloseIcon className="w-4 h-4 text-[#5f6368]" />
+        </div>
       );
     }
   });
 
   const ProgressBar = memo(() => {
-    if (completed) {
-      return <div className="custom-progress-success"></div>;
-    } else if (canceled) {
-      return <div className="custom-progress-failed"></div>;
-    } else if (type === "file") {
+    let barColor = "bg-[#1a73e8]";
+    if (completed) barColor = "bg-[#188038]";
+    if (canceled) barColor = "bg-[#d93025]";
+
+    if (type === "folder" && !completed && !canceled) {
       return (
-        <progress className="custom-progress" value={progress} max="100" />
+        <div className="w-full bg-[#e9eef6] h-1.5 rounded-full mt-2 overflow-hidden relative">
+          <div className="absolute top-0 bottom-0 left-0 w-1/2 bg-[#1a73e8] rounded-full animate-pulse"></div>
+        </div>
       );
-    } else {
-      return <progress className="custom-progress indeterminate" />;
     }
+
+    return (
+      <div className="w-full bg-[#e9eef6] h-1.5 rounded-full mt-2 overflow-hidden">
+        <div 
+          className={classNames("h-full transition-all duration-300 rounded-full", barColor)}
+          style={{ width: `${completed ? 100 : canceled ? 100 : progress}%` }}
+        ></div>
+      </div>
+    );
   });
 
   return (
-    <div className="relative p-[20px] flex justify-between items-start hover:bg-[#f6f5fd]">
-      <div className="w-full">
-        <div className="flex justify-between items-center mb-1">
-          <div className="mr-[30px]">
-            <p className="text-[15px] leading-[18px] font-medium max-w-[160px] overflow-hidden whitespace-nowrap text-ellipsis">
-              {name}
-            </p>
-          </div>
-          <div>
-            <ProgressIcon />
-          </div>
+    <div className="p-4 flex flex-col justify-center border-b border-gray-100 last:border-0 hover:bg-[#f8f9fa] transition-colors">
+      <div className="w-full flex justify-between items-center">
+        <div className="mr-4 overflow-hidden flex-1">
+          <p className="text-[13px] leading-tight font-medium text-[#3c4043] truncate m-0">
+            {name}
+          </p>
         </div>
-        <div>
-          <ProgressBar />
+        <div className="shrink-0 flex items-center justify-center">
+          <ProgressIcon />
         </div>
+      </div>
+      <div className="w-full pr-10">
+        <ProgressBar />
       </div>
     </div>
   );

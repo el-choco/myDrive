@@ -4,6 +4,7 @@ import { toast } from "react-toastify";
 import { logoutAPI, resendVerifyEmailAPI } from "../../api/userAPI";
 import Swal from "sweetalert2";
 import { useNavigate } from "react-router-dom";
+import { useTranslation } from "react-i18next";
 
 interface SettingsPageAccountProps {
   user: {
@@ -21,24 +22,25 @@ const SettingsPageAccount: React.FC<SettingsPageAccountProps> = ({
   const [showChangePasswordPopup, setShowChangePasswordPopup] = useState(false);
   const lastSentEmailVerifiation = useRef(0);
   const navigate = useNavigate();
+  const { t } = useTranslation();
 
   const logoutClick = async () => {
     try {
       const result = await Swal.fire({
-        title: "Logout?",
+        title: t("settings.logout_confirm_title"),
         icon: "info",
         showCancelButton: true,
-        confirmButtonColor: "#3085d6",
+        confirmButtonColor: "#1a73e8",
         cancelButtonColor: "#d33",
-        confirmButtonText: "Yes, logout",
+        confirmButtonText: t("settings.btn_yes_logout"),
       });
 
       if (!result.value) return;
 
       await toast.promise(logoutAPI(), {
-        pending: "Logging out...",
-        success: "Logged out",
-        error: "Error Logging Out",
+        pending: t("toast.logging_out"),
+        success: t("toast.logged_out"),
+        error: t("toast.error_logging_out"),
       });
 
       window.localStorage.removeItem("hasPreviouslyLoggedIn");
@@ -52,20 +54,20 @@ const SettingsPageAccount: React.FC<SettingsPageAccountProps> = ({
   const logoutAllClick = async () => {
     try {
       const result = await Swal.fire({
-        title: "Logout all?",
+        title: t("settings.logout_all_confirm_title"),
         icon: "info",
         showCancelButton: true,
-        confirmButtonColor: "#3085d6",
+        confirmButtonColor: "#1a73e8",
         cancelButtonColor: "#d33",
-        confirmButtonText: "Yes, logout all",
+        confirmButtonText: t("settings.btn_yes_logout_all"),
       });
 
       if (!result.value) return;
 
       await toast.promise(logoutAPI(), {
-        pending: "Logging out all...",
-        success: "Logged out all",
-        error: "Error Logging Out all",
+        pending: t("toast.logging_out_all"),
+        success: t("toast.logged_out_all"),
+        error: t("toast.error_logging_out_all"),
       });
 
       window.localStorage.removeItem("hasPreviouslyLoggedIn");
@@ -81,19 +83,19 @@ const SettingsPageAccount: React.FC<SettingsPageAccountProps> = ({
       const currentDate = Date.now();
       if (currentDate - lastSentEmailVerifiation.current < 1000 * 60 * 1) {
         await Swal.fire({
-          title: "Please wait 1 minute before resending",
+          title: t("settings.wait_1_min"),
           icon: "warning",
-          confirmButtonColor: "#3085d6",
-          confirmButtonText: "Okay",
+          confirmButtonColor: "#1a73e8",
+          confirmButtonText: t("settings.btn_okay"),
         });
         return;
       }
       lastSentEmailVerifiation.current = Date.now();
 
       await toast.promise(resendVerifyEmailAPI(), {
-        pending: "Resending email verification...",
-        success: "Email Verification Resent",
-        error: "Error Resending Email Verification",
+        pending: t("toast.resending_email"),
+        success: t("toast.email_resent"),
+        error: t("toast.error_resending_email"),
       });
 
       getUser();
@@ -103,59 +105,64 @@ const SettingsPageAccount: React.FC<SettingsPageAccountProps> = ({
   };
 
   return (
-    <div>
+    <div className="animate-fade-in">
       {showChangePasswordPopup && (
         <SettingsChangePasswordPopup
           closePopup={() => setShowChangePasswordPopup(false)}
         />
       )}
 
-      <div className="bg-white-hover p-3 flex items-center w-full rounded-md">
-        <p className="text-base">Account</p>
-      </div>
-      <div>
-        <div className="p-3 flex flex-row justify-between items-center border-b border-gray-secondary">
-          <p className="text-gray-primary">Email</p>
-          <p>{user.email}</p>
+      <h3 className="text-[18px] font-medium text-[#1f1f1f] mb-4 m-0">
+        {t("settings.account_title")}
+      </h3>
+      
+      <div className="border border-gray-200 rounded-2xl overflow-hidden bg-white">
+        <div className="px-6 py-4 flex flex-row justify-between items-center border-b border-gray-100 hover:bg-[#f8f9fa] transition-colors">
+          <p className="text-[#3c4043] font-medium text-[14px] m-0">{t("settings.email")}</p>
+          <p className="text-[#5f6368] text-[14px] m-0">{user.email}</p>
         </div>
+        
         {"emailVerified" in user && !user.emailVerified && (
-          <div className="px-3 py-4 flex flex-row justify-between items-center border-b border-gray-secondary">
-            <p className="text-gray-primary">Email not verified</p>
+          <div className="px-6 py-4 flex flex-row justify-between items-center border-b border-gray-100 hover:bg-[#f8f9fa] transition-colors">
+            <p className="text-[#3c4043] font-medium text-[14px] m-0">{t("settings.email_not_verified")}</p>
             {!user.emailVerified && (
               <button
-                className="text-primary hover:text-primary-hover cursor-pointer"
+                className="text-[#1a73e8] hover:bg-[#f1f3f4] px-4 py-1.5 rounded-full font-medium text-[14px] transition-colors bg-transparent border-none cursor-pointer outline-none"
                 onClick={resendEmailVerification}
               >
-                Resend
+                {t("settings.btn_resend")}
               </button>
             )}
           </div>
         )}
-        <div className="px-3 py-4 flex flex-row justify-between items-center border-b border-gray-secondary">
-          <p className="text-gray-primary">Change password</p>
+        
+        <div className="px-6 py-4 flex flex-row justify-between items-center border-b border-gray-100 hover:bg-[#f8f9fa] transition-colors">
+          <p className="text-[#3c4043] font-medium text-[14px] m-0">{t("settings.change_password")}</p>
           <button
-            className="text-primary hover:text-primary-hover cursor-pointer"
+            className="text-[#1a73e8] hover:bg-[#f1f3f4] px-4 py-1.5 rounded-full font-medium text-[14px] transition-colors bg-transparent border-none cursor-pointer outline-none"
             onClick={() => setShowChangePasswordPopup(true)}
           >
-            Change
+            {t("settings.btn_change")}
           </button>
         </div>
-        <div className="px-3 py-4 flex flex-row justify-between items-center border-b border-gray-secondary">
-          <p className="text-gray-primary">Logout account</p>
+        
+        <div className="px-6 py-4 flex flex-row justify-between items-center border-b border-gray-100 hover:bg-[#f8f9fa] transition-colors">
+          <p className="text-[#3c4043] font-medium text-[14px] m-0">{t("settings.logout_account")}</p>
           <button
-            className="text-primary hover:text-primary-hover cursor-pointer"
+            className="text-[#d93025] hover:bg-[#fce8e6] px-4 py-1.5 rounded-full font-medium text-[14px] transition-colors bg-transparent border-none cursor-pointer outline-none"
             onClick={logoutClick}
           >
-            Logout
+            {t("settings.btn_logout")}
           </button>
         </div>
-        <div className="px-3 py-4 flex flex-row justify-between items-center border-b border-gray-secondary">
-          <p className="text-gray-primary">Logout all sessions</p>
+        
+        <div className="px-6 py-4 flex flex-row justify-between items-center hover:bg-[#f8f9fa] transition-colors">
+          <p className="text-[#3c4043] font-medium text-[14px] m-0">{t("settings.logout_all")}</p>
           <button
-            className="text-primary hover:text-primary-hover cursor-pointer"
+            className="text-[#d93025] hover:bg-[#fce8e6] px-4 py-1.5 rounded-full font-medium text-[14px] transition-colors bg-transparent border-none cursor-pointer outline-none"
             onClick={logoutAllClick}
           >
-            Logout all
+            {t("settings.btn_logout_all")}
           </button>
         </div>
       </div>
